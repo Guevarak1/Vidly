@@ -32,13 +32,20 @@ import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GooglePlayServicesAvailabilityIOException;
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.ExponentialBackOff;
+import com.google.api.client.util.Joiner;
+import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.YouTubeScopes;
 import com.google.api.services.youtube.model.Channel;
 import com.google.api.services.youtube.model.ChannelListResponse;
+import com.google.api.services.youtube.model.SearchListResponse;
+import com.google.api.services.youtube.model.SearchResult;
+import com.google.api.services.youtube.model.Video;
+import com.google.api.services.youtube.model.VideoListResponse;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -50,6 +57,7 @@ import pub.devrel.easypermissions.EasyPermissions;
 
 public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks {
 
+    private static final long  NUMBER_OF_VIDEOS_RETURNED = 25;
     GoogleAccountCredential mCredential;
     private TextView mOutputText;
     private Button mCallApiButton;
@@ -357,16 +365,16 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 REQUEST_GOOGLE_PLAY_SERVICES);
         dialog.show();
     }
+    public class MakeRequestTask extends AsyncTask<Void, Void, List<Video>> {
 
-    /**
-     * An asynchronous task that handles the YouTube Data API call.
-     * Placing the API calls in their own task ensures the UI stays responsive.
-     */
-    private class MakeRequestTask extends AsyncTask<Void, Void, List<String>> {
+        /**
+         * An asynchronous task that handles the YouTube Data API call.
+         * Placing the API calls in their own task ensures the UI stays responsive.
+         */
         private com.google.api.services.youtube.YouTube mService = null;
         private Exception mLastError = null;
 
-        MakeRequestTask(GoogleAccountCredential credential) {
+        public MakeRequestTask(GoogleAccountCredential credential) {
             HttpTransport transport = AndroidHttp.newCompatibleTransport();
             JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
             mService = new com.google.api.services.youtube.YouTube.Builder(
@@ -381,7 +389,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
          * @param params no parameters needed for this task.
          */
         @Override
-        protected List<String> doInBackground(Void... params) {
+        protected List<Video> doInBackground(Void... params) {
             try {
                 return getDataFromApi();
             } catch (Exception e) {
@@ -397,20 +405,70 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
          * @return List of Strings containing information about the channel.
          * @throws IOException
          */
-        private List<String> getDataFromApi() throws IOException {
+        private List<Video> getDataFromApi() throws IOException {
             // Get a list of up to 10 files.
-            List<String> channelInfo = new ArrayList<String>();
-            ChannelListResponse result = mService.channels().list("snippet,contentDetails,statistics")
-                    .setForUsername("GoogleDevelopers")
-                    .execute();
-            List<Channel> channels = result.getItems();
-            if (channels != null) {
-                Channel channel = channels.get(0);
-                channelInfo.add("This channel's ID is " + channel.getId() + ". " +
-                        "Its title is '" + channel.getSnippet().getTitle() + ", " +
-                        "and it has " + channel.getStatistics().getViewCount() + " views.");
+
+
+            try {
+                // Prompt the user to enter a query term.
+                String queryTerm = "YouTube Developers Live";
+
+                // Prompt the user to enter location coordinates.
+                String location = "37.42307,-122.08427";
+
+                // Prompt the user to enter a location radius.
+                String locationRadius = "5km";
+
+                // Define the API request for retrieving search results.
+                YouTube.Search.List search = mService.search().list("id,snippet");
+
+                search.setQ(queryTerm);
+                search.setLocation(location);
+                search.setLocationRadius(locationRadius);
+
+                // Restrict the search results to only include videos. See:
+                // https://developers.google.com/youtube/v3/docs/search/list#type
+                search.setType("video");
+
+                // As a best practice, only retrieve the fields that the
+                // application uses.
+                search.setFields("items(id/videoId)");
+                search.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
+
+                // Call the API and print results.
+                SearchListResponse searchResponse = search.execute();
+                List<SearchResult> searchResultList = searchResponse.getItems();
+                List<String> videoIds = new ArrayList<String>();
+
+                if (searchResultList != null) {
+
+                    // Merge video IDs
+                    for (SearchResult searchResult : searchResultList) {
+                        videoIds.add(searchResult.getId().getVideoId());
+                    }
+                    Joiner stringJoiner = Joiner.on(',');
+                    String videoId = stringJoiner.join(videoIds);
+
+                    // Call the YouTube Data API's youtube.videos.list method to
+                    // retrieve the resources that represent the specified videos.
+                    YouTube.Videos.List listVideosRequest = mService.videos().list("snippet, recordingDetails").setId(videoId);
+                    VideoListResponse listResponse = listVideosRequest.execute();
+
+                    List<Video> videoList = listResponse.getItems();
+
+                    if (videoList != null) {
+                        return videoList;
+                    }
+                }
+            } catch (GoogleJsonResponseException e) {
+                System.err.println("There was a service error: " + e.getDetails().getCode() + " : "
+                        + e.getDetails().getMessage());
+            } catch (IOException e) {
+                System.err.println("There was an IO error: " + e.getCause() + " : " + e.getMessage());
+            } catch (Throwable t) {
+                t.printStackTrace();
             }
-            return channelInfo;
+            return null;
         }
 
 
@@ -421,12 +479,12 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         }
 
         @Override
-        protected void onPostExecute(List<String> output) {
+        protected void onPostExecute(List<Video> output) {
             mProgress.hide();
             if (output == null || output.size() == 0) {
                 mOutputText.setText("No results returned.");
             } else {
-                output.add(0, "Data retrieved using the YouTube Data API:");
+                //output.add(0, "Data retrieved using the YouTube Data API:");
                 mOutputText.setText(TextUtils.join("\n", output));
             }
         }
