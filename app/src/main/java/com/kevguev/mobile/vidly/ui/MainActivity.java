@@ -1,4 +1,4 @@
-package com.kevguev.mobile.vidly;
+package com.kevguev.mobile.vidly.ui;
 
 import android.Manifest;
 import android.accounts.AccountManager;
@@ -12,18 +12,15 @@ import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.text.method.ScrollingMovementMethod;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -40,12 +37,13 @@ import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.client.util.Joiner;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.YouTubeScopes;
-import com.google.api.services.youtube.model.Channel;
-import com.google.api.services.youtube.model.ChannelListResponse;
 import com.google.api.services.youtube.model.SearchListResponse;
 import com.google.api.services.youtube.model.SearchResult;
 import com.google.api.services.youtube.model.Video;
 import com.google.api.services.youtube.model.VideoListResponse;
+import com.kevguev.mobile.vidly.R;
+import com.kevguev.mobile.vidly.adapter.SearchAdapter;
+import com.kevguev.mobile.vidly.model.SearchData;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -72,6 +70,8 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     private static final String PREF_ACCOUNT_NAME = "accountName";
     private static final String[] SCOPES = {YouTubeScopes.YOUTUBE_READONLY};
 
+    private RecyclerView recView;
+    private SearchAdapter adapter;
     /**
      * Create the main activity.
      *
@@ -96,10 +96,14 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 getApplicationContext(), Arrays.asList(SCOPES))
                 .setBackOff(new ExponentialBackOff());
 
-//        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-//        setSupportActionBar(toolbar);
-//
-//        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        recView = (RecyclerView) findViewById(R.id.rec_list);
+        //layout manager: girdlayout manager or staggered grid layout manager
+        recView.setLayoutManager(new LinearLayoutManager(this));
+
+        adapter = new SearchAdapter(SearchData.getListData(),this);
+        recView.setAdapter(adapter);
+
+
     }
 
     public void buttonClicked(View view){
@@ -108,11 +112,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         getResultsFromApi();
         mCallApiButton.setEnabled(true);
 
-    }
-
-    public void fabClicked(View v) {
-        Snackbar.make(v, "Replace with your own action", Snackbar.LENGTH_LONG)
-                .setAction("Action", null).show();
     }
 
     /**
