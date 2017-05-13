@@ -82,55 +82,32 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        mCallApiButton = (Button) findViewById(R.id.callApiButton);
 
-        LinearLayout activityLayout = new LinearLayout(this);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT);
-        activityLayout.setLayoutParams(lp);
-        activityLayout.setOrientation(LinearLayout.VERTICAL);
-        activityLayout.setPadding(16, 16, 16, 16);
-
-        ViewGroup.LayoutParams tlp = new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT);
-
-        mCallApiButton = new Button(this);
-        mCallApiButton.setText(BUTTON_TEXT);
-        mCallApiButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mCallApiButton.setEnabled(false);
-                mOutputText.setText("");
-                getResultsFromApi();
-                mCallApiButton.setEnabled(true);
-            }
-        });
-        activityLayout.addView(mCallApiButton);
-
-        mOutputText = new TextView(this);
-        mOutputText.setLayoutParams(tlp);
-        mOutputText.setPadding(16, 16, 16, 16);
+        mOutputText = (TextView) findViewById(R.id.outputText);
         mOutputText.setVerticalScrollBarEnabled(true);
         mOutputText.setMovementMethod(new ScrollingMovementMethod());
-        mOutputText.setText(
-                "Click the \'" + BUTTON_TEXT + "\' button to test the API.");
-        activityLayout.addView(mOutputText);
 
         mProgress = new ProgressDialog(this);
         mProgress.setMessage("Calling YouTube Data API ...");
-
-        setContentView(activityLayout);
 
         // Initialize credentials and service object.
         mCredential = GoogleAccountCredential.usingOAuth2(
                 getApplicationContext(), Arrays.asList(SCOPES))
                 .setBackOff(new ExponentialBackOff());
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+//        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+//        setSupportActionBar(toolbar);
+//
+//        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+    }
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+    public void buttonClicked(View view){
+        mCallApiButton.setEnabled(false);
+        mOutputText.setText("");
+        getResultsFromApi();
+        mCallApiButton.setEnabled(true);
+
     }
 
     public void fabClicked(View v) {
@@ -470,7 +447,23 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             }
             return null;
         }
+        // TODO: 5/12/2017 use this for recycler view then delete this
+        /*
 
+        private static void prettyPrint(int size, Iterator<PlaylistItem> playlistEntries) {
+        System.out.println("=============================================================");
+        System.out.println("\t\tTotal Videos Uploaded: " + size);
+        System.out.println("=============================================================\n");
+
+        while (playlistEntries.hasNext()) {
+            PlaylistItem playlistItem = playlistEntries.next();
+            System.out.println(" video name  = " + playlistItem.getSnippet().getTitle());
+            System.out.println(" video id    = " + playlistItem.getContentDetails().getVideoId());
+            System.out.println(" upload date = " + playlistItem.getSnippet().getPublishedAt());
+            System.out.println("\n-------------------------------------------------------------\n");
+        }
+    }
+         */
 
         @Override
         protected void onPreExecute() {
@@ -484,6 +477,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             if (output == null || output.size() == 0) {
                 mOutputText.setText("No results returned.");
             } else {
+
                 //output.add(0, "Data retrieved using the YouTube Data API:");
                 mOutputText.setText(TextUtils.join("\n", output));
             }
@@ -509,5 +503,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 mOutputText.setText("Request cancelled.");
             }
         }
+
+
     }
 }
