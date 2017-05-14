@@ -34,7 +34,8 @@ public class SearchData {
             "Ajahn Chah",
             "Carl Sagan",
             "Alhazen",
-            "Jim Rohn"
+            "Jim Rohn",
+            "Kevin"
 
     };
     private static final int[] icons = {android.R.drawable.ic_popup_reminder,
