@@ -43,6 +43,7 @@ import com.google.api.services.youtube.model.Video;
 import com.google.api.services.youtube.model.VideoListResponse;
 import com.kevguev.mobile.vidly.R;
 import com.kevguev.mobile.vidly.adapter.SearchAdapter;
+import com.kevguev.mobile.vidly.model.ListItem;
 import com.kevguev.mobile.vidly.model.SearchData;
 
 import java.io.IOException;
@@ -53,7 +54,7 @@ import java.util.List;
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
-public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks {
+public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks, SearchAdapter.ItemClickCallback {
 
     private static final long  NUMBER_OF_VIDEOS_RETURNED = 25;
     GoogleAccountCredential mCredential;
@@ -66,12 +67,18 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     static final int REQUEST_GOOGLE_PLAY_SERVICES = 1002;
     static final int REQUEST_PERMISSION_GET_ACCOUNTS = 1003;
 
+    private static final String BUNDLE_EXTRAS = "BUNDLE_EXTRAS";
+    private static final String EXTRA_QUOTE = "EXTRA_QUOTE";
+    private static final String EXTRA_ATTR = "EXTRA_ATTR";
+
     private static final String BUTTON_TEXT = "Call YouTube Data API";
     private static final String PREF_ACCOUNT_NAME = "accountName";
     private static final String[] SCOPES = {YouTubeScopes.YOUTUBE_READONLY};
 
     private RecyclerView recView;
     private SearchAdapter adapter;
+    private ArrayList listData;
+
     /**
      * Create the main activity.
      *
@@ -102,8 +109,8 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
         adapter = new SearchAdapter(SearchData.getListData(),this);
         recView.setAdapter(adapter);
-
-
+        adapter.setItemClickCallback(this);
+        listData = (ArrayList) SearchData.getListData();
     }
 
     public void buttonClicked(View view){
@@ -341,6 +348,35 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 REQUEST_GOOGLE_PLAY_SERVICES);
         dialog.show();
     }
+
+    @Override
+    public void onItemClick(int p) {
+        ListItem item = (ListItem) listData.get(p);
+        Intent i = new Intent(this, DetailActivity.class);
+        Bundle extras = new Bundle();
+
+        extras.putString(EXTRA_QUOTE, item.getTitle());
+        extras.putString(EXTRA_ATTR, item.getSubtitle());
+
+        i.putExtra(BUNDLE_EXTRAS, extras);
+        startActivity(i);
+    }
+
+    @Override
+    public void onSecondaryIconClick(int p) {
+        ListItem item = (ListItem) listData.get(p);
+        //update our data
+        if(item.isFavorite()){
+            item.setFavorite(false);
+        }else{
+            item.setFavorite(true);
+        }
+        // pass new data to adapter and update
+        adapter.setListData(listData);
+        adapter.notifyDataSetChanged();
+
+    }
+
     public class MakeRequestTask extends AsyncTask<Void, Void, List<Video>> {
 
         /**

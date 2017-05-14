@@ -7,8 +7,25 @@ package com.kevguev.mobile.vidly.model;
 
 public class ListItem {
     private String title;
+    private String subtitle;
+    private boolean favorite = false;
     private int imageResId;
 
+    public String getSubtitle() {
+        return subtitle;
+    }
+
+    public void setSubtitle(String subtitle) {
+        this.subtitle = subtitle;
+    }
+
+    public boolean isFavorite() {
+        return favorite;
+    }
+
+    public void setFavorite(boolean favorite) {
+        this.favorite = favorite;
+    }
 
     public String getTitle() {
         return title;
