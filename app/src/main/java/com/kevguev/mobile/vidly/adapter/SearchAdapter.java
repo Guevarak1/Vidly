@@ -35,6 +35,11 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchHold
         this.itemClickCallback = itemClickCallback;
     }
 
+    public SearchAdapter(Context context){
+        this.inflater = LayoutInflater.from(context);
+        this.listData = new ArrayList<ListItem>();
+    }
+
     public SearchAdapter(List<ListItem> listdata, Context c) {
         this.inflater = LayoutInflater.from(c);
         this.listData = listdata;

@@ -56,7 +56,6 @@ import pub.devrel.easypermissions.EasyPermissions;
 
 public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks, SearchAdapter.ItemClickCallback {
 
-    private static final long  NUMBER_OF_VIDEOS_RETURNED = 25;
     GoogleAccountCredential mCredential;
     private TextView mOutputText;
     private Button mCallApiButton;
@@ -106,11 +105,10 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         recView = (RecyclerView) findViewById(R.id.rec_list);
         //layout manager: girdlayout manager or staggered grid layout manager
         recView.setLayoutManager(new LinearLayoutManager(this));
-
-        adapter = new SearchAdapter(SearchData.getListData(),this);
-        recView.setAdapter(adapter);
+        adapter = new SearchAdapter(this);
         adapter.setItemClickCallback(this);
-        listData = (ArrayList) SearchData.getListData();
+        recView.setAdapter(adapter);
+
     }
 
     public void buttonClicked(View view){
@@ -136,7 +134,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         } else if (!isDeviceOnline()) {
             mOutputText.setText("No network connection available.");
         } else {
-            new MakeRequestTask(mCredential).execute();
+            new MakeRequestTask().execute();
         }
     }
 
@@ -383,17 +381,8 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
          * An asynchronous task that handles the YouTube Data API call.
          * Placing the API calls in their own task ensures the UI stays responsive.
          */
-        private com.google.api.services.youtube.YouTube mService = null;
         private Exception mLastError = null;
-
-        public MakeRequestTask(GoogleAccountCredential credential) {
-            HttpTransport transport = AndroidHttp.newCompatibleTransport();
-            JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
-            mService = new com.google.api.services.youtube.YouTube.Builder(
-                    transport, jsonFactory, credential)
-                    .setApplicationName("YouTube Data API Android Quickstart")
-                    .build();
-        }
+        SearchData mSearchData;
 
         /**
          * Background task to call YouTube Data API.
@@ -403,7 +392,8 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         @Override
         protected List<Video> doInBackground(Void... params) {
             try {
-                return getDataFromApi();
+                mSearchData = new SearchData(mCredential);
+                return mSearchData.getDataFromApi();
             } catch (Exception e) {
                 mLastError = e;
                 cancel(true);
@@ -416,88 +406,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
          *
          * @return List of Strings containing information about the channel.
          * @throws IOException
-         */
-        private List<Video> getDataFromApi() throws IOException {
-            // Get a list of up to 10 files.
-
-
-            try {
-                // Prompt the user to enter a query term.
-                String queryTerm = "YouTube Developers Live";
-
-                // Prompt the user to enter location coordinates.
-                String location = "37.42307,-122.08427";
-
-                // Prompt the user to enter a location radius.
-                String locationRadius = "5km";
-
-                // Define the API request for retrieving search results.
-                YouTube.Search.List search = mService.search().list("id,snippet");
-
-                search.setQ(queryTerm);
-                search.setLocation(location);
-                search.setLocationRadius(locationRadius);
-
-                // Restrict the search results to only include videos. See:
-                // https://developers.google.com/youtube/v3/docs/search/list#type
-                search.setType("video");
-
-                // As a best practice, only retrieve the fields that the
-                // application uses.
-                search.setFields("items(id/videoId)");
-                search.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
-
-                // Call the API and print results.
-                SearchListResponse searchResponse = search.execute();
-                List<SearchResult> searchResultList = searchResponse.getItems();
-                List<String> videoIds = new ArrayList<String>();
-
-                if (searchResultList != null) {
-
-                    // Merge video IDs
-                    for (SearchResult searchResult : searchResultList) {
-                        videoIds.add(searchResult.getId().getVideoId());
-                    }
-                    Joiner stringJoiner = Joiner.on(',');
-                    String videoId = stringJoiner.join(videoIds);
-
-                    // Call the YouTube Data API's youtube.videos.list method to
-                    // retrieve the resources that represent the specified videos.
-                    YouTube.Videos.List listVideosRequest = mService.videos().list("snippet, recordingDetails").setId(videoId);
-                    VideoListResponse listResponse = listVideosRequest.execute();
-
-                    List<Video> videoList = listResponse.getItems();
-
-                    if (videoList != null) {
-                        return videoList;
-                    }
-                }
-            } catch (GoogleJsonResponseException e) {
-                System.err.println("There was a service error: " + e.getDetails().getCode() + " : "
-                        + e.getDetails().getMessage());
-            } catch (IOException e) {
-                System.err.println("There was an IO error: " + e.getCause() + " : " + e.getMessage());
-            } catch (Throwable t) {
-                t.printStackTrace();
-            }
-            return null;
-        }
-        // TODO: 5/12/2017 use this for recycler view then delete this
-        /*
-
-        private static void prettyPrint(int size, Iterator<PlaylistItem> playlistEntries) {
-        System.out.println("=============================================================");
-        System.out.println("\t\tTotal Videos Uploaded: " + size);
-        System.out.println("=============================================================\n");
-
-        while (playlistEntries.hasNext()) {
-            PlaylistItem playlistItem = playlistEntries.next();
-            System.out.println(" video name  = " + playlistItem.getSnippet().getTitle());
-            System.out.println(" video id    = " + playlistItem.getContentDetails().getVideoId());
-            System.out.println(" upload date = " + playlistItem.getSnippet().getPublishedAt());
-            System.out.println("\n-------------------------------------------------------------\n");
-        }
-    }
          */
 
         @Override
@@ -512,9 +420,9 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             if (output == null || output.size() == 0) {
                 mOutputText.setText("No results returned.");
             } else {
-
-                //output.add(0, "Data retrieved using the YouTube Data API:");
-                mOutputText.setText(TextUtils.join("\n", output));
+                listData = (ArrayList) mSearchData.getListData(output);
+                adapter.setListData(listData);
+                adapter.notifyDataSetChanged();
             }
         }
 

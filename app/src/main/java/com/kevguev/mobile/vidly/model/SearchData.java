@@ -1,7 +1,20 @@
 package com.kevguev.mobile.vidly.model;
 
+import com.google.api.client.extensions.android.http.AndroidHttp;
+import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.api.client.http.HttpTransport;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.util.Joiner;
+import com.google.api.services.youtube.YouTube;
+import com.google.api.services.youtube.model.SearchListResponse;
+import com.google.api.services.youtube.model.SearchResult;
+import com.google.api.services.youtube.model.Video;
+import com.google.api.services.youtube.model.VideoListResponse;
 import com.kevguev.mobile.vidly.R;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,54 +24,97 @@ import java.util.List;
 
 public class SearchData {
 
-    private static final String[] titles = {"Nothingness cannot be defined",
-            "Time is like a river made up of the events which happen, and a violent stream; " +
-                    "for as soon as a thing has been seen, it is carried away, and another comes" +
-                    " in its place, and this will be carried away too,",
-            "But when I know that the glass is already broken, every minute with it is precious.",
-            "For me, it is far better to grasp the Universe as it really is than to persist in" +
-                    " delusion, however satisfying and reassuring.",
-            "The seeker after the truth is not one who studies the writings of the ancients and," +
-                    " following his natural disposition, puts his trust in them, but rather the" +
-                    " one who suspects his faith in them and questions what he gathers from them," +
-                    " the one who submits to argument and demonstration, and not to the " +
-                    "sayings of a human being whose nature is fraught with all kinds " +
-                    "of imperfection and deficiency.",
-            "You must take personal responsibility. You cannot change the circumstances, the" +
-                    " seasons, or the wind, but you can change yourself. That is something you" +
-                    " have charge of."
-    };
-    private static final String[] subTitles = {"Bruce Lee",
-            "Marcus Aurelius",
-            "Meng Tzu",
-            "Ajahn Chah",
-            "Carl Sagan",
-            "Alhazen",
-            "Jim Rohn",
-            "Kevin",
-            "brian"
+    private static final int icon = R.drawable.ic_local_play_black_36dp;
+    private com.google.api.services.youtube.YouTube mService = null;
+    private static final long NUMBER_OF_VIDEOS_RETURNED = 25;
 
-    };
-    private static final int[] icons = {android.R.drawable.ic_popup_reminder,
-            android.R.drawable.ic_menu_add, android.R.drawable.ic_menu_delete};
 
-    private static final int icon = R.drawable.ic_tonality_black_36dp;
-    public static List<ListItem> getListData(){
+    public SearchData(GoogleAccountCredential credential) {
+        HttpTransport transport = AndroidHttp.newCompatibleTransport();
+        JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
+        mService = new com.google.api.services.youtube.YouTube.Builder(
+                transport, jsonFactory, credential)
+                .setApplicationName("YouTube Data API Android Quickstart")
+                .build();
+    }
+
+    public List<Video> getDataFromApi() throws IOException {
+
+        try {
+            // Prompt the user to enter a query term.
+            String queryTerm = "YouTube Developers Live";
+
+            // Prompt the user to enter location coordinates.
+            String location = "37.42307,-122.08427";
+
+            // Prompt the user to enter a location radius.
+            String locationRadius = "5km";
+
+            // Define the API request for retrieving search results.
+            YouTube.Search.List search = mService.search().list("id,snippet");
+
+            search.setQ(queryTerm);
+            search.setLocation(location);
+            search.setLocationRadius(locationRadius);
+
+            // Restrict the search results to only include videos. See:
+            // https://developers.google.com/youtube/v3/docs/search/list#type
+            search.setType("video");
+
+            // As a best practice, only retrieve the fields that the
+            // application uses.
+            search.setFields("items(id/videoId)");
+            search.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
+
+            // Call the API and print results.
+            SearchListResponse searchResponse = search.execute();
+            List<SearchResult> searchResultList = searchResponse.getItems();
+            List<String> videoIds = new ArrayList<String>();
+
+            if (searchResultList != null) {
+
+                // Merge video IDs
+                for (SearchResult searchResult : searchResultList) {
+                    videoIds.add(searchResult.getId().getVideoId());
+                }
+                Joiner stringJoiner = Joiner.on(',');
+                String videoId = stringJoiner.join(videoIds);
+
+                // Call the YouTube Data API's youtube.videos.list method to
+                // retrieve the resources that represent the specified videos.
+                YouTube.Videos.List listVideosRequest = mService.videos().list("snippet, recordingDetails").setId(videoId);
+                VideoListResponse listResponse = listVideosRequest.execute();
+
+                List<Video> videoList = listResponse.getItems();
+
+                if (videoList != null) {
+                    return videoList;
+                }
+            }
+        } catch (GoogleJsonResponseException e) {
+            System.err.println("There was a service error: " + e.getDetails().getCode() + " : "
+                    + e.getDetails().getMessage());
+        } catch (IOException e) {
+            System.err.println("There was an IO error: " + e.getCause() + " : " + e.getMessage());
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+        return null;
+    }
+
+    public List<ListItem> getListData(List<Video> videos) {
 
         List<ListItem> data = new ArrayList<>();
-        //repeat process 4 times, so that we have enough data to determine a scrollable
-        //recyclerview
 
-        for (int i = 0; i < 4; i++) {
-            //create ListItem with dummy data and then add it to our list
-            for (int j = 0; j < titles.length; j++) {
-                ListItem item = new ListItem();
-                item.setImageResId(icon);
-                item.setTitle(titles[j]);
-                item.setSubtitle(subTitles[j]);
-                data.add(item);
-            }
+        //create ListItem with dummy data and then add it to our list
+        for (Video video: videos) {
+            ListItem item = new ListItem();
+            item.setImageResId(icon);
+            item.setTitle(video.getSnippet().getTitle());
+            item.setSubtitle(video.getSnippet().getDescription());
+            data.add(item);
         }
+
         return data;
     }
 }
