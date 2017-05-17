@@ -13,7 +13,7 @@
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
         android:paddingLeft="16dp"
-        android:src="@drawable/ic_tonality_black_36dp" />
+        android:src="@drawable/ic_local_play_black_36dp" />
 
     <TextView
         android:id="@+id/lbl_item_text"

@@ -15,13 +15,16 @@ import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.text.method.ScrollingMovementMethod;
+import android.view.MenuInflater;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
@@ -109,6 +112,8 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         adapter.setItemClickCallback(this);
         recView.setAdapter(adapter);
 
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
     }
 
     public void buttonClicked(View view){
@@ -239,6 +244,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            Toast.makeText(this, "Action Settings clicked", Toast.LENGTH_SHORT).show();
             return true;
         }
 
@@ -420,6 +426,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             if (output == null || output.size() == 0) {
                 mOutputText.setText("No results returned.");
             } else {
+                mOutputText.setVisibility(View.GONE);
                 listData = (ArrayList) mSearchData.getListData(output);
                 adapter.setListData(listData);
                 adapter.notifyDataSetChanged();
