@@ -44,12 +44,6 @@ public class SearchData {
             // Prompt the user to enter a query term.
             String queryTerm = "YouTube Developers Live";
 
-            // Prompt the user to enter location coordinates.
-            //ny coordinates 40.7128, 74.0059
-            //san fran coord 37.7577627,-122.4726194
-            //Atlanta 33.7678358,-84.4906438
-            //maryland 38.8994613,-77.0846063
-            
             String location = "37.42307,-122.08427";
 
             // Prompt the user to enter a location radius.

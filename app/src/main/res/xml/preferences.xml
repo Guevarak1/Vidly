@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.v7.preference.PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <android.support.v7.preference.PreferenceCategory
+        android:title="Location Information"
+        android:key="location_info">
+
+        <android.support.v7.preference.EditTextPreference
+            android:key="pref_search_query"
+            android:title="Search Query"
+            android:summary="Enter Your Search Query"
+            android:dialogTitle="Your Search"
+            android:dialogMessage="Enter Your Search Query"
+            android:inputType="textCapWords"/>
+
+        <android.support.v7.preference.ListPreference
+            android:key="pref_location"
+            android:title="Location Preference"
+            android:summary="Where we will be searching"
+            android:entries="@array/locations"
+            android:entryValues="@array/locationsValues"/>
+
+        <android.support.v7.preference.ListPreference
+            android:key="pref_radius"
+            android:title="Location Radius"
+            android:summary="How large is your radius"
+            android:entries="@array/radius"
+            android:entryValues="@array/locationsValues"/>
+
+    </android.support.v7.preference.PreferenceCategory>
+</android.support.v7.preference.PreferenceScreen>
