@@ -6,7 +6,7 @@
         android:key="location_info">
 
         <android.support.v7.preference.EditTextPreference
-            android:key="pref_search_query"
+            android:key="@string/pref_search_query"
             android:title="Search Query"
             android:summary="Enter Your Search Query"
             android:dialogTitle="Your Search"
@@ -14,18 +14,18 @@
             android:inputType="textCapWords"/>
 
         <android.support.v7.preference.ListPreference
-            android:key="pref_location"
+            android:key="@string/pref_location"
             android:title="Location Preference"
             android:summary="Where we will be searching"
             android:entries="@array/locations"
             android:entryValues="@array/locationsValues"/>
 
         <android.support.v7.preference.ListPreference
-            android:key="pref_radius"
+            android:key="@string/pref_radius"
             android:title="Location Radius"
             android:summary="How large is your radius"
             android:entries="@array/radius"
-            android:entryValues="@array/locationsValues"/>
+            android:entryValues="@array/radiusValues"/>
 
     </android.support.v7.preference.PreferenceCategory>
 </android.support.v7.preference.PreferenceScreen>

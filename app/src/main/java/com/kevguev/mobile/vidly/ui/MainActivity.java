@@ -15,6 +15,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
@@ -118,7 +119,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         setSupportActionBar(toolbar);
     }
 
-    public void buttonClicked(View view){
+    public void buttonClicked(View view) {
         mCallApiButton.setEnabled(false);
         mOutputText.setText("");
         getResultsFromApi();
@@ -141,7 +142,14 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         } else if (!isDeviceOnline()) {
             mOutputText.setText("No network connection available.");
         } else {
-            new MakeRequestTask().execute();
+
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+            String query = prefs.getString(getString(R.string.pref_search_query), "default query");
+            String location = prefs.getString(getString(R.string.pref_location), "default location");
+            String radius = prefs.getString(getString(R.string.pref_radius), "default query");
+
+
+            new MakeRequestTask(query, location, radius).execute();
         }
     }
 
@@ -373,9 +381,9 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     public void onSecondaryIconClick(int p) {
         ListItem item = (ListItem) listData.get(p);
         //update our data
-        if(item.isFavorite()){
+        if (item.isFavorite()) {
             item.setFavorite(false);
-        }else{
+        } else {
             item.setFavorite(true);
         }
         // pass new data to adapter and update
@@ -392,6 +400,13 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
          */
         private Exception mLastError = null;
         SearchData mSearchData;
+        String query, location, radius;
+
+        public MakeRequestTask(String query, String location, String radius) {
+            this.query = query;
+            this.location = location;
+            this.radius = radius;
+        }
 
         /**
          * Background task to call YouTube Data API.
@@ -401,8 +416,11 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         @Override
         protected List<Video> doInBackground(Void... params) {
             try {
+
+                // TODO: 5/17/2017 get preferences from here to pass into the getDataApi() method
+
                 mSearchData = new SearchData(mCredential);
-                return mSearchData.getDataFromApi();
+                return mSearchData.getDataFromApi(query, location, radius);
             } catch (Exception e) {
                 mLastError = e;
                 cancel(true);

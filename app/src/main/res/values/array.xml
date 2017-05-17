@@ -14,15 +14,15 @@
     </string-array>
 
     <string-array name="radius">
-        <item>1k</item>
-        <item>5k</item>
-        <item>10k</item>
+        <item>1km</item>
+        <item>5km</item>
+        <item>10km</item>
     </string-array>
 
     <string-array name="radiusValues">
-        <item>1k</item>
-        <item>5k</item>
-        <item>10k</item>
+        <item>1km</item>
+        <item>5km</item>
+        <item>10km</item>
     </string-array>
 
 
