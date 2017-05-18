@@ -148,7 +148,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             String location = prefs.getString(getString(R.string.pref_location), "default location");
             String radius = prefs.getString(getString(R.string.pref_radius), "default query");
 
-
             new MakeRequestTask(query, location, radius).execute();
         }
     }
@@ -416,9 +415,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         @Override
         protected List<Video> doInBackground(Void... params) {
             try {
-
-                // TODO: 5/17/2017 get preferences from here to pass into the getDataApi() method
-
                 mSearchData = new SearchData(mCredential);
                 return mSearchData.getDataFromApi(query, location, radius);
             } catch (Exception e) {
