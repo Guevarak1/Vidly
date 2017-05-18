@@ -1,4 +1,9 @@
 <resources>
     <string name="app_name">Vidly</string>
     <string name="action_settings">Settings</string>
+    <string name="pref_search_query">pref_search_query</string>
+    <string name="pref_location">pref_location</string>
+    <string name="pref_radius">pref_radius</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string-array name="locations">
+        <item>New York</item>
+        <item>San Francisco</item>
+        <item>Washington D.C</item>
+    </string-array>
+
+    <string-array name="locationsValues">
+        <item>40.7128, 74.0059</item>
+        <item>37.7577627,-122.4726194</item>
+        <item>38.8994613,-77.0846063</item>
+    </string-array>
+
+    <string-array name="radius">
+        <item>1km</item>
+        <item>5km</item>
+        <item>10km</item>
+    </string-array>
+
+    <string-array name="radiusValues">
+        <item>1km</item>
+        <item>5km</item>
+        <item>10km</item>
+    </string-array>
+
+
+</resources>

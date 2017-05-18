@@ -38,22 +38,16 @@ public class SearchData {
                 .build();
     }
 
-    public List<Video> getDataFromApi() throws IOException {
+    public List<Video> getDataFromApi(String queryTerm, String location, String locationRadius) throws IOException {
 
         try {
             // Prompt the user to enter a query term.
-            String queryTerm = "YouTube Developers Live";
+            //String queryTerm = "YouTube Developers Live";
 
-            // Prompt the user to enter location coordinates.
-            //ny coordinates 40.7128, 74.0059
-            //san fran coord 37.7577627,-122.4726194
-            //Atlanta 33.7678358,-84.4906438
-            //maryland 38.8994613,-77.0846063
-            
-            String location = "37.42307,-122.08427";
+            //String location = "37.42307,-122.08427";
 
             // Prompt the user to enter a location radius.
-            String locationRadius = "5km";
+            //String locationRadius = "5km";
 
             // Define the API request for retrieving search results.
             YouTube.Search.List search = mService.search().list("id,snippet");
