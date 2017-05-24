@@ -41,15 +41,6 @@ public class SearchData {
     public List<Video> getDataFromApi(String queryTerm, String location, String locationRadius) throws IOException {
 
         try {
-            // Prompt the user to enter a query term.
-            //String queryTerm = "YouTube Developers Live";
-
-            //String location = "37.42307,-122.08427";
-
-            // Prompt the user to enter a location radius.
-            //String locationRadius = "5km";
-
-            // Define the API request for retrieving search results.
             YouTube.Search.List search = mService.search().list("id,snippet");
 
             search.setQ(queryTerm);
