@@ -25,5 +25,17 @@
         <item>10km</item>
     </string-array>
 
+    <string-array name="published">
+        <item>Past Day</item>
+        <item>Past Week</item>
+        <item>Past Month</item>
+    </string-array>
+
+    <string-array name="publishedValues">
+        <item>day</item>
+        <item>week</item>
+        <item>month</item>
+    </string-array>
+
 
 </resources>

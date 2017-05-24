@@ -6,6 +6,7 @@ import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.util.DateTime;
 import com.google.api.client.util.Joiner;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.SearchListResponse;
@@ -16,6 +17,8 @@ import com.kevguev.mobile.vidly.R;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -38,12 +41,13 @@ public class SearchData {
                 .build();
     }
 
-    public List<Video> getDataFromApi(String queryTerm, String location, String locationRadius) throws IOException {
+    public List<Video> getDataFromApi(String publishedAfter, String location, String locationRadius) throws IOException {
 
         try {
             YouTube.Search.List search = mService.search().list("id,snippet");
 
-            search.setQ(queryTerm);
+            //search.setQ(query);
+            search.setPublishedAfter(new DateTime(yesterday())); // convert publishedAfter string to datetime with method
             search.setLocation(location);
             search.setLocationRadius(locationRadius);
 
@@ -107,4 +111,12 @@ public class SearchData {
 
         return data;
     }
+
+    //eventually put into a date time utils class
+    private Date yesterday() {
+        final Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DATE, -1);
+        return cal.getTime();
+    }
+
 }

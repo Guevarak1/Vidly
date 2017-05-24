@@ -5,14 +5,21 @@
         android:title="Location Information"
         android:key="location_info">
 
-        <android.support.v7.preference.EditTextPreference
-            android:key="@string/pref_search_query"
-            android:title="Search Query"
-            android:summary="Enter Your Search Query"
-            android:dialogTitle="Your Search"
-            android:dialogMessage="Enter Your Search Query"
-            android:dialogLayout="@layout/pref_dialog_edittext_fix"
-            android:inputType="textCapWords"/>
+        <!--<android.support.v7.preference.EditTextPreference-->
+            <!--android:key="@string/pref_search_query"-->
+            <!--android:title="Search Query"-->
+            <!--android:summary="Enter Your Search Query"-->
+            <!--android:dialogTitle="Your Search"-->
+            <!--android:dialogMessage="Enter Your Search Query"-->
+            <!--android:dialogLayout="@layout/pref_dialog_edittext_fix"-->
+            <!--android:inputType="textCapWords"/>-->
+
+        <android.support.v7.preference.ListPreference
+            android:key="@string/pref_published_after"
+            android:title="Post Time"
+            android:summary="How long ago it was posted"
+            android:entries="@array/published"
+            android:entryValues="@array/publishedValues"/>
 
         <android.support.v7.preference.ListPreference
             android:key="@string/pref_location"
