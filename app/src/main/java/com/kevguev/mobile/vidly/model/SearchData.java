@@ -47,7 +47,8 @@ public class SearchData {
             YouTube.Search.List search = mService.search().list("id,snippet");
 
             //search.setQ(query);
-            search.setPublishedAfter(new DateTime(yesterday())); // convert publishedAfter string to datetime with method
+            //convert publishedAfter string to datetime with method. only fetching stuff published after yesterday
+            search.setPublishedAfter(new DateTime(yesterday()));
             search.setLocation(location);
             search.setLocationRadius(locationRadius);
 
@@ -112,7 +113,8 @@ public class SearchData {
         return data;
     }
 
-    //eventually put into a date time utils class
+    //TODO: last week, and last month functions
+    // eventually put into a date time utils class
     private Date yesterday() {
         final Calendar cal = Calendar.getInstance();
         cal.add(Calendar.DATE, -1);

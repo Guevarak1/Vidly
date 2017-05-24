@@ -241,8 +241,8 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
             //String query = prefs.getString(getString(R.string.pref_search_query), "default query");
             String publishedAfter = prefs.getString(getString(R.string.pref_published_after), "1");
-            String location = prefs.getString(getString(R.string.pref_location), "default location");
-            String radius = prefs.getString(getString(R.string.pref_radius), "default query");
+            String location = prefs.getString(getString(R.string.pref_location), "New York");
+            String radius = prefs.getString(getString(R.string.pref_radius), "1km");
 
             new MakeRequestTask(publishedAfter, location, radius).execute();
         }
