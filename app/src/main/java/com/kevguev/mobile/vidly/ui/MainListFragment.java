@@ -14,6 +14,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
+import android.support.v7.preference.ListPreference;
 import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -240,8 +241,10 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
             //on install has no saved params so we need to populate on start
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
             //String query = prefs.getString(getString(R.string.pref_search_query), "default query");
-            String publishedAfter = prefs.getString(getString(R.string.pref_published_after), "1");
-            String location = prefs.getString(getString(R.string.pref_location), "New York");
+
+
+            String publishedAfter = prefs.getString(getString(R.string.pref_published_after), "day"); // published after 1 day
+            String location = prefs.getString(getString(R.string.pref_location), "40.7417544,-74.0086348"); //new york
             String radius = prefs.getString(getString(R.string.pref_radius), "1km");
 
             new MakeRequestTask(publishedAfter, location, radius).execute();

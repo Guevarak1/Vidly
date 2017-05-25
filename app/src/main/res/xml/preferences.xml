@@ -19,21 +19,24 @@
             android:title="Post Time"
             android:summary="How long ago it was posted"
             android:entries="@array/published"
-            android:entryValues="@array/publishedValues"/>
+            android:entryValues="@array/publishedValues"
+            android:defaultValue="day" />
 
         <android.support.v7.preference.ListPreference
             android:key="@string/pref_location"
             android:title="Location Preference"
             android:summary="Where we will be searching"
             android:entries="@array/locations"
-            android:entryValues="@array/locationsValues"/>
+            android:entryValues="@array/locationsValues"
+            android:defaultValue="40.7417544,-74.0086348" />
 
         <android.support.v7.preference.ListPreference
             android:key="@string/pref_radius"
             android:title="Location Radius"
             android:summary="How large is your radius"
             android:entries="@array/radius"
-            android:entryValues="@array/radiusValues"/>
+            android:entryValues="@array/radiusValues"
+            android:defaultValue="1km" />
 
     </android.support.v7.preference.PreferenceCategory>
 </android.support.v7.preference.PreferenceScreen>
