@@ -8,7 +8,7 @@
     </string-array>
 
     <string-array name="locationsValues">
-        <item>40.7128, 74.0059</item>
+        <item>40.7417544,-74.0086348</item>
         <item>37.7577627,-122.4726194</item>
         <item>38.8994613,-77.0846063</item>
     </string-array>
@@ -23,6 +23,18 @@
         <item>1km</item>
         <item>5km</item>
         <item>10km</item>
+    </string-array>
+
+    <string-array name="published">
+        <item>Past Day</item>
+        <item>Past Week</item>
+        <item>Past Month</item>
+    </string-array>
+
+    <string-array name="publishedValues">
+        <item>day</item>
+        <item>week</item>
+        <item>month</item>
     </string-array>
 
 
