@@ -9,30 +9,25 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
-import android.support.v7.preference.ListPreference;
 import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.method.ScrollingMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GooglePlayServicesAvailabilityIOException;
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
-import com.google.api.client.util.DateTime;
 import com.google.api.client.util.ExponentialBackOff;
-import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.YouTubeScopes;
 import com.google.api.services.youtube.model.Video;
 import com.kevguev.mobile.vidly.R;
@@ -52,8 +47,7 @@ import static android.app.Activity.RESULT_OK;
 
 public class MainListFragment extends Fragment implements EasyPermissions.PermissionCallbacks, SearchAdapter.ItemClickCallback {
 
-    private TextView mOutputText;
-    private Button mCallApiButton;
+    FloatingActionButton mFab;
     ProgressDialog mProgress;
     private RecyclerView recView;
     private SearchAdapter adapter;
@@ -93,17 +87,13 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view =  inflater.inflate(R.layout.fragment_main_list, container, false);
-        mCallApiButton = (Button) view.findViewById(R.id.callApiButton);
-        mCallApiButton.setOnClickListener(new View.OnClickListener() {
+        mFab = (FloatingActionButton) getActivity().findViewById(R.id.fab);
+        mFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                buttonClicked(view);
+                fabClicked(view);
             }
         });
-
-        mOutputText = (TextView) view.findViewById(R.id.outputText);
-        mOutputText.setVerticalScrollBarEnabled(true);
-        mOutputText.setMovementMethod(new ScrollingMovementMethod());
 
         mProgress = new ProgressDialog(getActivity());
         mProgress.setMessage("Calling YouTube Data API ...");
@@ -123,9 +113,8 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
         switch (requestCode) {
             case REQUEST_GOOGLE_PLAY_SERVICES:
                 if (resultCode != RESULT_OK) {
-                    mOutputText.setText(
-                            "This app requires Google Play Services. Please install " +
-                                    "Google Play Services on your device and relaunch this app.");
+                    Toast.makeText(getActivity(),"This app requires Google Play Services. Please install " +
+                            "Google Play Services on your device and relaunch this app.",Toast.LENGTH_SHORT);
                 } else {
                     getResultsFromApi();
                 }
@@ -235,7 +224,7 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
         } else if (mCredential.getSelectedAccountName() == null) {
             chooseAccount();
         } else if (!isDeviceOnline()) {
-            mOutputText.setText("No network connection available.");
+            Toast.makeText(getActivity(),"No network connection available.",Toast.LENGTH_SHORT);
         } else {
 
             //on install has no saved params so we need to populate on start
@@ -266,8 +255,6 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
                 REQUEST_GOOGLE_PLAY_SERVICES);
         dialog.show();
     }
-
-
 
     /**
      * Attempts to set the account used with the API credentials. If an account
@@ -304,8 +291,6 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
         }
     }
 
-
-
     /**
      * Respond to requests for permissions at runtime for API 23 and above.
      *
@@ -315,7 +300,6 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
      * @param grantResults The grant results for the corresponding permissions
      *                     which is either PERMISSION_GRANTED or PERMISSION_DENIED. Never null.
      */
-
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -350,11 +334,10 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
         //do nothing
     }
 
-    public void buttonClicked(View view) {
-        mCallApiButton.setEnabled(false);
-        mOutputText.setText("");
+    public void fabClicked(View view) {
+        mFab.setEnabled(false);
         getResultsFromApi();
-        mCallApiButton.setEnabled(true);
+        mFab.setEnabled(true);
 
     }
 
@@ -401,7 +384,6 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
 
         @Override
         protected void onPreExecute() {
-            mOutputText.setText("");
             mProgress.show();
         }
 
@@ -409,9 +391,9 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
         protected void onPostExecute(List<Video> output) {
             mProgress.hide();
             if (output == null || output.size() == 0) {
-                mOutputText.setText("No results returned.");
+                Toast.makeText(getActivity(),"No results returned.",Toast.LENGTH_SHORT);
+
             } else {
-                mOutputText.setVisibility(View.GONE);
                 listData = (ArrayList) mSearchData.getListData(output);
                 adapter.setListData(listData);
                 adapter.notifyDataSetChanged();
@@ -431,11 +413,11 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
                             ((UserRecoverableAuthIOException) mLastError).getIntent(),
                             MainActivity.REQUEST_AUTHORIZATION);
                 } else {
-                    mOutputText.setText("The following error occurred:\n"
-                            + mLastError.getMessage());
+                    Toast.makeText(getActivity(),"The following error occurred:\n"
+                            + mLastError.getMessage(),Toast.LENGTH_SHORT);
                 }
             } else {
-                mOutputText.setText("Request cancelled.");
+                Toast.makeText(getActivity(),"Request cancelled.",Toast.LENGTH_SHORT);
             }
         }
 
