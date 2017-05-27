@@ -11,14 +11,17 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Toast;
 
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.kevguev.mobile.vidly.R;
 
 import java.util.ArrayList;
 import java.util.List;
 
 //find out whats being uploaded near you
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity  {
 
     static final int REQUEST_AUTHORIZATION = 1001;
 
@@ -47,7 +50,6 @@ public class MainActivity extends AppCompatActivity {
         tabLayout.setupWithViewPager(viewPager);
     }
 
-
     /**
      * Called when an activity launched here (specifically, AccountPicker
      * and authorization) exits, giving you the requestCode you started it with,
@@ -69,10 +71,11 @@ public class MainActivity extends AppCompatActivity {
     private void setupViewPager(ViewPager viewPager) {
         ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
         adapter.addFragment(new MainListFragment(), "LIST");
-        adapter.addFragment(new MainListFragment(), "MAP");
-        adapter.addFragment(new MainListFragment(), "FAV");
+        adapter.addFragment(new MapFragment(), "MAP");
+        adapter.addFragment(new FavoritesFragment(), "FAV");
         viewPager.setAdapter(adapter);
     }
+
 
     class ViewPagerAdapter extends FragmentPagerAdapter{
 

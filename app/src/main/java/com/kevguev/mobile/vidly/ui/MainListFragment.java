@@ -22,6 +22,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
@@ -86,7 +87,7 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View view =  inflater.inflate(R.layout.fragment_main_list, container, false);
+        View view = inflater.inflate(R.layout.fragment_main_list, container, false);
         mFab = (FloatingActionButton) getActivity().findViewById(R.id.fab);
         mFab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -97,7 +98,7 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
 
         mProgress = new ProgressDialog(getActivity());
         mProgress.setMessage("Calling YouTube Data API ...");
-        recView = (RecyclerView)view.findViewById(R.id.rec_list);
+        recView = (RecyclerView) view.findViewById(R.id.rec_list);
         //layout manager: girdlayout manager or staggered grid layout manager
         recView.setLayoutManager(new LinearLayoutManager(getActivity()));
         adapter = new SearchAdapter(getActivity());
@@ -113,8 +114,8 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
         switch (requestCode) {
             case REQUEST_GOOGLE_PLAY_SERVICES:
                 if (resultCode != RESULT_OK) {
-                    Toast.makeText(getActivity(),"This app requires Google Play Services. Please install " +
-                            "Google Play Services on your device and relaunch this app.",Toast.LENGTH_SHORT);
+                    Toast.makeText(getActivity(), "This app requires Google Play Services. Please install " +
+                            "Google Play Services on your device and relaunch this app.", Toast.LENGTH_SHORT);
                 } else {
                     getResultsFromApi();
                 }
@@ -224,7 +225,7 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
         } else if (mCredential.getSelectedAccountName() == null) {
             chooseAccount();
         } else if (!isDeviceOnline()) {
-            Toast.makeText(getActivity(),"No network connection available.",Toast.LENGTH_SHORT);
+            Toast.makeText(getActivity(), "No network connection available.", Toast.LENGTH_SHORT);
         } else {
 
             //on install has no saved params so we need to populate on start
@@ -239,6 +240,7 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
             new MakeRequestTask(publishedAfter, location, radius).execute();
         }
     }
+
     /**
      * Display an error dialog showing that Google Play Services is missing
      * or out of date.
@@ -336,9 +338,24 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
 
     public void fabClicked(View view) {
         mFab.setEnabled(false);
-        getResultsFromApi();
+        createDialog();
         mFab.setEnabled(true);
 
+    }
+
+    private void createDialog() {
+        new MaterialDialog.Builder(getActivity())
+                .title(R.string.dialog_location_title)
+                .items(R.array.currentLocationValues)
+                .itemsCallbackSingleChoice(0, new MaterialDialog.ListCallbackSingleChoice() {
+                    @Override
+                    public boolean onSelection(MaterialDialog dialog, View view, int which, CharSequence text) {
+                        getResultsFromApi();
+                        return true;
+                    }
+                })
+                .positiveText(R.string.choose)
+                .show();
     }
 
     public class MakeRequestTask extends AsyncTask<Void, Void, List<Video>> {
@@ -391,7 +408,7 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
         protected void onPostExecute(List<Video> output) {
             mProgress.hide();
             if (output == null || output.size() == 0) {
-                Toast.makeText(getActivity(),"No results returned.",Toast.LENGTH_SHORT);
+                Toast.makeText(getActivity(), "No results returned.", Toast.LENGTH_SHORT);
 
             } else {
                 listData = (ArrayList) mSearchData.getListData(output);
@@ -413,11 +430,11 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
                             ((UserRecoverableAuthIOException) mLastError).getIntent(),
                             MainActivity.REQUEST_AUTHORIZATION);
                 } else {
-                    Toast.makeText(getActivity(),"The following error occurred:\n"
-                            + mLastError.getMessage(),Toast.LENGTH_SHORT);
+                    Toast.makeText(getActivity(), "The following error occurred:\n"
+                            + mLastError.getMessage(), Toast.LENGTH_SHORT);
                 }
             } else {
-                Toast.makeText(getActivity(),"Request cancelled.",Toast.LENGTH_SHORT);
+                Toast.makeText(getActivity(), "Request cancelled.", Toast.LENGTH_SHORT);
             }
         }
 
