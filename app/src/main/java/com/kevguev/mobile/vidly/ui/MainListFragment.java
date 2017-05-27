@@ -29,6 +29,7 @@ import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccoun
 import com.google.api.client.googleapis.extensions.android.gms.auth.GooglePlayServicesAvailabilityIOException;
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
 import com.google.api.client.util.ExponentialBackOff;
+import com.google.api.client.util.Strings;
 import com.google.api.services.youtube.YouTubeScopes;
 import com.google.api.services.youtube.model.Video;
 import com.kevguev.mobile.vidly.R;
@@ -117,7 +118,7 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
                     Toast.makeText(getActivity(), "This app requires Google Play Services. Please install " +
                             "Google Play Services on your device and relaunch this app.", Toast.LENGTH_SHORT);
                 } else {
-                    getResultsFromApi();
+                    getResultsFromApi("40.7417544,-74.0086348");
                 }
                 break;
             case REQUEST_ACCOUNT_PICKER:
@@ -132,13 +133,13 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
                         editor.putString(PREF_ACCOUNT_NAME, accountName);
                         editor.apply();
                         mCredential.setSelectedAccountName(accountName);
-                        getResultsFromApi();
+                        getResultsFromApi("40.7417544,-74.0086348");
                     }
                 }
                 break;
             case REQUEST_AUTHORIZATION:
                 if (resultCode == RESULT_OK) {
-                    getResultsFromApi();
+                    getResultsFromApi("40.7417544,-74.0086348");
                 }
                 break;
         }
@@ -219,26 +220,82 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
      * of the preconditions are not satisfied, the app will prompt the user as
      * appropriate.
      */
-    private void getResultsFromApi() {
+    private void getResultsFromApi(String locationChosen) {
+        String accountName = getActivity().getPreferences(Context.MODE_PRIVATE)
+                .getString(PREF_ACCOUNT_NAME, null);
         if (!isGooglePlayServicesAvailable()) {
             acquireGooglePlayServices();
+        } else if (accountName != null) {
+            mCredential.setSelectedAccountName(accountName);
+
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+            //String query = prefs.getString(getString(R.string.pref_search_query), "default query");
+
+            String publishedAfter = prefs.getString(getString(R.string.pref_published_after), "day"); // published after 1 day
+            // String location = prefs.getString(getString(R.string.pref_location), "40.7417544,-74.0086348"); //new york
+            String radius = prefs.getString(getString(R.string.pref_radius), "1km");
+
+            new MakeRequestTask(publishedAfter, locationChosen, radius).execute();
+
+            //issue where mCredentials.setName erases after every launch
         } else if (mCredential.getSelectedAccountName() == null) {
             chooseAccount();
         } else if (!isDeviceOnline()) {
             Toast.makeText(getActivity(), "No network connection available.", Toast.LENGTH_SHORT);
-        } else {
-
-            //on install has no saved params so we need to populate on start
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-            //String query = prefs.getString(getString(R.string.pref_search_query), "default query");
-
-
-            String publishedAfter = prefs.getString(getString(R.string.pref_published_after), "day"); // published after 1 day
-            String location = prefs.getString(getString(R.string.pref_location), "40.7417544,-74.0086348"); //new york
-            String radius = prefs.getString(getString(R.string.pref_radius), "1km");
-
-            new MakeRequestTask(publishedAfter, location, radius).execute();
         }
+    }
+
+
+    private void fabClicked(View view) {
+        mFab.setEnabled(false);
+        createDialog();
+        mFab.setEnabled(true);
+
+    }
+
+    private void createDialog() {
+
+
+        new MaterialDialog.Builder(getActivity())
+                .title(R.string.dialog_location_title)
+                .items(R.array.currentLocationValues)
+                .itemsCallbackSingleChoice(0, new MaterialDialog.ListCallbackSingleChoice() {
+                    @Override
+                    public boolean onSelection(MaterialDialog dialog, View view, int which, CharSequence text) {
+                        getResultsFromApi(toLatLng(which));
+                        return true;
+                    }
+                })
+                .positiveText(R.string.choose)
+                .show();
+    }
+
+    private String toLatLng(int i) {
+
+        String chosen = "";
+        String[] locationValuesList = getResources().getStringArray(R.array.locationsValues);
+        String[] locationList = getResources().getStringArray(R.array.locations);
+        switch (i) {
+            case 0:
+                Toast.makeText(getActivity(), "eventually current location", Toast.LENGTH_SHORT).show();
+                break;
+            case 1:
+                Toast.makeText(getActivity(), locationList[0], Toast.LENGTH_SHORT).show();
+                chosen = locationValuesList[0];
+                break;
+            case 2:
+                Toast.makeText(getActivity(), locationList[1], Toast.LENGTH_SHORT).show();
+                chosen = locationValuesList[1];
+                break;
+            case 3:
+                Toast.makeText(getActivity(), locationList[2], Toast.LENGTH_SHORT).show();
+                chosen = locationValuesList[2];
+                break;
+            default:
+                break;
+
+        }
+        return chosen;
     }
 
     /**
@@ -276,7 +333,7 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
                     .getString(PREF_ACCOUNT_NAME, null);
             if (accountName != null) {
                 mCredential.setSelectedAccountName(accountName);
-                getResultsFromApi();
+                //getResultsFromApi(toLatLng(0));
             } else {
                 // Start a dialog from which the user can choose an account
                 startActivityForResult(
@@ -334,28 +391,6 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
     @Override
     public void onPermissionsDenied(int requestCode, List<String> list) {
         //do nothing
-    }
-
-    public void fabClicked(View view) {
-        mFab.setEnabled(false);
-        createDialog();
-        mFab.setEnabled(true);
-
-    }
-
-    private void createDialog() {
-        new MaterialDialog.Builder(getActivity())
-                .title(R.string.dialog_location_title)
-                .items(R.array.currentLocationValues)
-                .itemsCallbackSingleChoice(0, new MaterialDialog.ListCallbackSingleChoice() {
-                    @Override
-                    public boolean onSelection(MaterialDialog dialog, View view, int which, CharSequence text) {
-                        getResultsFromApi();
-                        return true;
-                    }
-                })
-                .positiveText(R.string.choose)
-                .show();
     }
 
     public class MakeRequestTask extends AsyncTask<Void, Void, List<Video>> {
