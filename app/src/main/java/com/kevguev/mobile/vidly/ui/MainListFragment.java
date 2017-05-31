@@ -57,7 +57,6 @@ import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
 import static android.app.Activity.RESULT_OK;
-import static com.google.android.gms.location.LocationServices.FusedLocationApi;
 
 public class MainListFragment extends Fragment
         implements EasyPermissions.PermissionCallbacks,
@@ -82,6 +81,7 @@ public class MainListFragment extends Fragment
     static final int REQUEST_PERMISSION_GET_ACCOUNTS = 1003;
     static final int REQUEST_PERMISSION_LOCATION = 1004;
     private static final String PREF_ACCOUNT_NAME = "accountName";
+    public int which;
 
     GoogleAccountCredential mCredential;
 
@@ -107,25 +107,6 @@ public class MainListFragment extends Fragment
 
         buildGoogleApiClient();
         createLocationRequest();
-
-    }
-
-    protected synchronized void buildGoogleApiClient() {
-        if (mGoogleApiClient == null) {
-            mGoogleApiClient = new GoogleApiClient.Builder(getActivity())
-                    .addConnectionCallbacks(this)
-                    .addOnConnectionFailedListener(this)
-                    .addApi(LocationServices.API)
-                    .build();
-        }
-    }
-
-
-    private void createLocationRequest() {
-        mLocationRequest = LocationRequest.create();
-        mLocationRequest.setInterval(10 * 1000);
-        mLocationRequest.setFastestInterval(1 * 1000);
-        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
     }
 
@@ -184,6 +165,9 @@ public class MainListFragment extends Fragment
 
     }
 
+    //TODO: change getResultApi to pull from current location
+    //issue were after permissions are granted, user's location will be set to ny
+    //figure out how to get which location user has chosen post permission
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -288,6 +272,55 @@ public class MainListFragment extends Fragment
         }
     }
 
+       private void fabClicked(View view) {
+        mFab.setEnabled(false);
+        createDialog();
+        mFab.setEnabled(true);
+
+    }
+
+    private void createDialog() {
+
+        new MaterialDialog.Builder(getActivity())
+                .title(R.string.dialog_location_title)
+                .items(R.array.currentLocationValues)
+                .itemsCallbackSingleChoice(0, new MaterialDialog.ListCallbackSingleChoice() {
+
+                    @Override
+                    public boolean onSelection(MaterialDialog dialog, View view, int which, CharSequence text) {
+
+                        getResultsFromApi(toLatLng(which));
+                        return true;
+                    }
+                })
+                .positiveText(R.string.choose)
+                .show();
+    }
+
+    private String toLatLng(int i) {
+
+        String chosen = "";
+        String[] locationValuesList = getResources().getStringArray(R.array.locationsValues);
+        switch (i) {
+            case 0:
+                chosen = lastLocation.getLatitude() + ", " + lastLocation.getLongitude();
+                break;
+            case 1:
+                chosen = locationValuesList[0];
+                break;
+            case 2:
+                chosen = locationValuesList[1];
+                break;
+            case 3:
+                chosen = locationValuesList[2];
+                break;
+            default:
+                break;
+
+        }
+        return chosen;
+    }
+
     /**
      * Attempt to call the API, after verifying that all the preconditions are
      * satisfied. The preconditions are: Google Play Services installed, an
@@ -319,60 +352,6 @@ public class MainListFragment extends Fragment
             Toast.makeText(getActivity(), "No network connection available.", Toast.LENGTH_SHORT);
         }
     }
-
-
-    private void fabClicked(View view) {
-        mFab.setEnabled(false);
-        createDialog();
-        mFab.setEnabled(true);
-
-    }
-
-    private void createDialog() {
-
-        new MaterialDialog.Builder(getActivity())
-                .title(R.string.dialog_location_title)
-                .items(R.array.currentLocationValues)
-                .itemsCallbackSingleChoice(0, new MaterialDialog.ListCallbackSingleChoice() {
-                    @Override
-                    public boolean onSelection(MaterialDialog dialog, View view, int which, CharSequence text) {
-                        getResultsFromApi(toLatLng(which));
-                        return true;
-                    }
-                })
-                .positiveText(R.string.choose)
-                .show();
-    }
-
-    private String toLatLng(int i) {
-
-        String chosen = "";
-        String[] locationValuesList = getResources().getStringArray(R.array.locationsValues);
-        String[] locationList = getResources().getStringArray(R.array.locations);
-        switch (i) {
-            case 0:
-                Toast.makeText(getActivity(), "eventually current lastLocation", Toast.LENGTH_SHORT).show();
-                chosen = lastLocation.getLatitude() + ", " + lastLocation.getLongitude();
-                break;
-            case 1:
-                Toast.makeText(getActivity(), locationList[0], Toast.LENGTH_SHORT).show();
-                chosen = locationValuesList[0];
-                break;
-            case 2:
-                Toast.makeText(getActivity(), locationList[1], Toast.LENGTH_SHORT).show();
-                chosen = locationValuesList[1];
-                break;
-            case 3:
-                Toast.makeText(getActivity(), locationList[2], Toast.LENGTH_SHORT).show();
-                chosen = locationValuesList[2];
-                break;
-            default:
-                break;
-
-        }
-        return chosen;
-    }
-
     /**
      * Display an error dialog showing that Google Play Services is missing
      * or out of date.
@@ -468,9 +447,13 @@ public class MainListFragment extends Fragment
         //do nothing
     }
 
-    @AfterPermissionGranted(REQUEST_PERMISSION_LOCATION)
     @Override
-    public void onConnected(@Nullable Bundle bundle) {
+    public void onConnected( Bundle bundle) {
+        locationPermission();
+    }
+
+    @AfterPermissionGranted(REQUEST_PERMISSION_LOCATION)
+    private void locationPermission(){
         if (EasyPermissions.hasPermissions(
                 getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION)) {
 
@@ -482,7 +465,6 @@ public class MainListFragment extends Fragment
             }
         }
         else{
-            // Request the GET_ACCOUNTS permission via a user dialog
             EasyPermissions.requestPermissions(
                     this,
                     "This app needs to access your Google account (via Contacts).",
@@ -490,7 +472,6 @@ public class MainListFragment extends Fragment
                     Manifest.permission.ACCESS_COARSE_LOCATION);
         }
     }
-
     @Override
     public void onConnectionSuspended(int i) {
         Log.i(TAG, "Connection suspended");
@@ -531,6 +512,24 @@ public class MainListFragment extends Fragment
         Toast.makeText(getActivity(), "location :"+location.getLatitude()+" , "+location.getLongitude(), Toast.LENGTH_SHORT).show();
     }
 
+    protected synchronized void buildGoogleApiClient() {
+        if (mGoogleApiClient == null) {
+            mGoogleApiClient = new GoogleApiClient.Builder(getActivity())
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .addApi(LocationServices.API)
+                    .build();
+        }
+    }
+
+    private void createLocationRequest() {
+        mLocationRequest = LocationRequest.create();
+        mLocationRequest.setInterval(10 * 1000);
+        mLocationRequest.setFastestInterval(1 * 1000);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+    }
+
     private void handleNewLocation(Location location){
         Log.d(TAG, location.toString());
 
@@ -541,6 +540,7 @@ public class MainListFragment extends Fragment
         //LatLng latLng = new LatLng(currentLatitude, currentLongitude);
 
     }
+
     public class MakeRequestTask extends AsyncTask<Void, Void, List<Video>> {
 
         /**
