@@ -7,6 +7,13 @@
         <item>Washington D.C</item>
     </string-array>
 
+    <string-array name="currentLocationValues">
+        <item>Current Location</item>
+        <item>New York</item>
+        <item>San Francisco</item>
+        <item>Washington D.C</item>
+    </string-array>
+
     <string-array name="locationsValues">
         <item>40.7417544,-74.0086348</item>
         <item>37.7577627,-122.4726194</item>

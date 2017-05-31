@@ -6,24 +6,37 @@ import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.FusedLocationProviderApi;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GooglePlayServicesAvailabilityIOException;
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
@@ -45,13 +58,19 @@ import pub.devrel.easypermissions.EasyPermissions;
 
 import static android.app.Activity.RESULT_OK;
 
-public class MainListFragment extends Fragment implements EasyPermissions.PermissionCallbacks, SearchAdapter.ItemClickCallback {
+public class MainListFragment extends Fragment
+        implements EasyPermissions.PermissionCallbacks,
+        SearchAdapter.ItemClickCallback,
+        GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener,
+        LocationListener {
 
     FloatingActionButton mFab;
     ProgressDialog mProgress;
     private RecyclerView recView;
     private SearchAdapter adapter;
     private ArrayList listData;
+    private Location lastLocation;
 
     private static final String BUNDLE_EXTRAS = "BUNDLE_EXTRAS";
     private static final String EXTRA_QUOTE = "EXTRA_QUOTE";
@@ -60,10 +79,17 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
     static final int REQUEST_AUTHORIZATION = 1001;
     static final int REQUEST_GOOGLE_PLAY_SERVICES = 1002;
     static final int REQUEST_PERMISSION_GET_ACCOUNTS = 1003;
-    private static final String BUTTON_TEXT = "Call YouTube Data API";
+    static final int REQUEST_PERMISSION_LOCATION = 1004;
     private static final String PREF_ACCOUNT_NAME = "accountName";
+    public int which;
 
     GoogleAccountCredential mCredential;
+
+    protected static final String TAG = MainListFragment.class.getSimpleName();
+    private final static int CONNECTION_FAILURE_RESOLUTION_REQUEST = 9000;
+    GoogleApiClient mGoogleApiClient;
+    LocationRequest mLocationRequest;
+
     private static final String[] SCOPES = {YouTubeScopes.YOUTUBE_READONLY};
 
     public MainListFragment() {
@@ -79,6 +105,8 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
                 getActivity().getApplicationContext(), Arrays.asList(SCOPES))
                 .setBackOff(new ExponentialBackOff());
 
+        buildGoogleApiClient();
+        createLocationRequest();
 
     }
 
@@ -86,7 +114,7 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View view =  inflater.inflate(R.layout.fragment_main_list, container, false);
+        View view = inflater.inflate(R.layout.fragment_main_list, container, false);
         mFab = (FloatingActionButton) getActivity().findViewById(R.id.fab);
         mFab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -97,7 +125,7 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
 
         mProgress = new ProgressDialog(getActivity());
         mProgress.setMessage("Calling YouTube Data API ...");
-        recView = (RecyclerView)view.findViewById(R.id.rec_list);
+        recView = (RecyclerView) view.findViewById(R.id.rec_list);
         //layout manager: girdlayout manager or staggered grid layout manager
         recView.setLayoutManager(new LinearLayoutManager(getActivity()));
         adapter = new SearchAdapter(getActivity());
@@ -108,15 +136,48 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
     }
 
     @Override
+    public void onStart() {
+        mGoogleApiClient.connect();
+        super.onStart();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (mGoogleApiClient.isConnected()) {
+            mGoogleApiClient.disconnect();
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        mGoogleApiClient.connect();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (mGoogleApiClient.isConnected()) {
+            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+            mGoogleApiClient.disconnect();
+        }
+
+    }
+
+    //TODO: change getResultApi to pull from current location
+    //issue were after permissions are granted, user's location will be set to ny
+    //figure out how to get which location user has chosen post permission
+    @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         switch (requestCode) {
             case REQUEST_GOOGLE_PLAY_SERVICES:
                 if (resultCode != RESULT_OK) {
-                    Toast.makeText(getActivity(),"This app requires Google Play Services. Please install " +
-                            "Google Play Services on your device and relaunch this app.",Toast.LENGTH_SHORT);
+                    Toast.makeText(getActivity(), "This app requires Google Play Services. Please install " +
+                            "Google Play Services on your device and relaunch this app.", Toast.LENGTH_SHORT);
                 } else {
-                    getResultsFromApi();
+                    getResultsFromApi("40.7417544,-74.0086348");
                 }
                 break;
             case REQUEST_ACCOUNT_PICKER:
@@ -131,13 +192,13 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
                         editor.putString(PREF_ACCOUNT_NAME, accountName);
                         editor.apply();
                         mCredential.setSelectedAccountName(accountName);
-                        getResultsFromApi();
+                        getResultsFromApi("40.7417544,-74.0086348");
                     }
                 }
                 break;
             case REQUEST_AUTHORIZATION:
                 if (resultCode == RESULT_OK) {
-                    getResultsFromApi();
+                    getResultsFromApi("40.7417544,-74.0086348");
                 }
                 break;
         }
@@ -211,6 +272,55 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
         }
     }
 
+       private void fabClicked(View view) {
+        mFab.setEnabled(false);
+        createDialog();
+        mFab.setEnabled(true);
+
+    }
+
+    private void createDialog() {
+
+        new MaterialDialog.Builder(getActivity())
+                .title(R.string.dialog_location_title)
+                .items(R.array.currentLocationValues)
+                .itemsCallbackSingleChoice(0, new MaterialDialog.ListCallbackSingleChoice() {
+
+                    @Override
+                    public boolean onSelection(MaterialDialog dialog, View view, int which, CharSequence text) {
+
+                        getResultsFromApi(toLatLng(which));
+                        return true;
+                    }
+                })
+                .positiveText(R.string.choose)
+                .show();
+    }
+
+    private String toLatLng(int i) {
+
+        String chosen = "";
+        String[] locationValuesList = getResources().getStringArray(R.array.locationsValues);
+        switch (i) {
+            case 0:
+                chosen = lastLocation.getLatitude() + ", " + lastLocation.getLongitude();
+                break;
+            case 1:
+                chosen = locationValuesList[0];
+                break;
+            case 2:
+                chosen = locationValuesList[1];
+                break;
+            case 3:
+                chosen = locationValuesList[2];
+                break;
+            default:
+                break;
+
+        }
+        return chosen;
+    }
+
     /**
      * Attempt to call the API, after verifying that all the preconditions are
      * satisfied. The preconditions are: Google Play Services installed, an
@@ -218,25 +328,28 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
      * of the preconditions are not satisfied, the app will prompt the user as
      * appropriate.
      */
-    private void getResultsFromApi() {
+    private void getResultsFromApi(String locationChosen) {
+        String accountName = getActivity().getPreferences(Context.MODE_PRIVATE)
+                .getString(PREF_ACCOUNT_NAME, null);
         if (!isGooglePlayServicesAvailable()) {
             acquireGooglePlayServices();
-        } else if (mCredential.getSelectedAccountName() == null) {
-            chooseAccount();
-        } else if (!isDeviceOnline()) {
-            Toast.makeText(getActivity(),"No network connection available.",Toast.LENGTH_SHORT);
-        } else {
+        } else if (accountName != null) {
+            mCredential.setSelectedAccountName(accountName);
 
-            //on install has no saved params so we need to populate on start
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
             //String query = prefs.getString(getString(R.string.pref_search_query), "default query");
 
-
             String publishedAfter = prefs.getString(getString(R.string.pref_published_after), "day"); // published after 1 day
-            String location = prefs.getString(getString(R.string.pref_location), "40.7417544,-74.0086348"); //new york
+            // String lastLocation = prefs.getString(getString(R.string.pref_location), "40.7417544,-74.0086348"); //new york
             String radius = prefs.getString(getString(R.string.pref_radius), "1km");
 
-            new MakeRequestTask(publishedAfter, location, radius).execute();
+            new MakeRequestTask(publishedAfter, locationChosen, radius).execute();
+
+            //issue where mCredentials.setName erases after every launch
+        } else if (mCredential.getSelectedAccountName() == null) {
+            chooseAccount();
+        } else if (!isDeviceOnline()) {
+            Toast.makeText(getActivity(), "No network connection available.", Toast.LENGTH_SHORT);
         }
     }
     /**
@@ -274,7 +387,7 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
                     .getString(PREF_ACCOUNT_NAME, null);
             if (accountName != null) {
                 mCredential.setSelectedAccountName(accountName);
-                getResultsFromApi();
+                //getResultsFromApi(toLatLng(0));
             } else {
                 // Start a dialog from which the user can choose an account
                 startActivityForResult(
@@ -334,10 +447,97 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
         //do nothing
     }
 
-    public void fabClicked(View view) {
-        mFab.setEnabled(false);
-        getResultsFromApi();
-        mFab.setEnabled(true);
+    @Override
+    public void onConnected( Bundle bundle) {
+        locationPermission();
+    }
+
+    @AfterPermissionGranted(REQUEST_PERMISSION_LOCATION)
+    private void locationPermission(){
+        if (EasyPermissions.hasPermissions(
+                getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION)) {
+
+            lastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+            if (lastLocation == null) {
+                LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
+            } else {
+                handleNewLocation(lastLocation);
+            }
+        }
+        else{
+            EasyPermissions.requestPermissions(
+                    this,
+                    "This app needs to access your Google account (via Contacts).",
+                    REQUEST_PERMISSION_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION);
+        }
+    }
+    @Override
+    public void onConnectionSuspended(int i) {
+        Log.i(TAG, "Connection suspended");
+        mGoogleApiClient.connect();
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+        /*
+         * Google Play services can resolve some errors it detects.
+         * If the error has a resolution, try sending an Intent to
+         * start a Google Play services activity that can resolve
+         * error.
+         */
+        if (connectionResult.hasResolution()) {
+            try {
+                // Start an Activity that tries to resolve the error
+                connectionResult.startResolutionForResult(getActivity(), CONNECTION_FAILURE_RESOLUTION_REQUEST);
+                /*
+                 * Thrown if Google Play services canceled the original
+                 * PendingIntent
+                 */
+            } catch (IntentSender.SendIntentException e) {
+                // Log the error
+                e.printStackTrace();
+            }
+        } else {
+            /*
+             * If no resolution is available, display a dialog to the
+             * user with the error.
+             */
+            Log.i(TAG, "Location services connection failed with code " + connectionResult.getErrorCode());
+        }
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        Toast.makeText(getActivity(), "location :"+location.getLatitude()+" , "+location.getLongitude(), Toast.LENGTH_SHORT).show();
+    }
+
+    protected synchronized void buildGoogleApiClient() {
+        if (mGoogleApiClient == null) {
+            mGoogleApiClient = new GoogleApiClient.Builder(getActivity())
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .addApi(LocationServices.API)
+                    .build();
+        }
+    }
+
+    private void createLocationRequest() {
+        mLocationRequest = LocationRequest.create();
+        mLocationRequest.setInterval(10 * 1000);
+        mLocationRequest.setFastestInterval(1 * 1000);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+    }
+
+    private void handleNewLocation(Location location){
+        Log.d(TAG, location.toString());
+
+        double currentLatitude = location.getLatitude();
+        double currentLongitude = location.getLongitude();
+
+        Toast.makeText(getActivity(), String.valueOf(currentLatitude) + " " + String.valueOf(currentLongitude), Toast.LENGTH_SHORT).show();
+        //LatLng latLng = new LatLng(currentLatitude, currentLongitude);
 
     }
 
@@ -391,7 +591,7 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
         protected void onPostExecute(List<Video> output) {
             mProgress.hide();
             if (output == null || output.size() == 0) {
-                Toast.makeText(getActivity(),"No results returned.",Toast.LENGTH_SHORT);
+                Toast.makeText(getActivity(), "No results returned.", Toast.LENGTH_SHORT);
 
             } else {
                 listData = (ArrayList) mSearchData.getListData(output);
@@ -413,11 +613,11 @@ public class MainListFragment extends Fragment implements EasyPermissions.Permis
                             ((UserRecoverableAuthIOException) mLastError).getIntent(),
                             MainActivity.REQUEST_AUTHORIZATION);
                 } else {
-                    Toast.makeText(getActivity(),"The following error occurred:\n"
-                            + mLastError.getMessage(),Toast.LENGTH_SHORT);
+                    Toast.makeText(getActivity(), "The following error occurred:\n"
+                            + mLastError.getMessage(), Toast.LENGTH_SHORT);
                 }
             } else {
-                Toast.makeText(getActivity(),"Request cancelled.",Toast.LENGTH_SHORT);
+                Toast.makeText(getActivity(), "Request cancelled.", Toast.LENGTH_SHORT);
             }
         }
 
