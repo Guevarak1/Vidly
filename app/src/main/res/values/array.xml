@@ -2,12 +2,6 @@
 <resources>
 
     <string-array name="locations">
-        <item>New York</item>
-        <item>San Francisco</item>
-        <item>Washington D.C</item>
-    </string-array>
-
-    <string-array name="currentLocationValues">
         <item>Current Location</item>
         <item>New York</item>
         <item>San Francisco</item>
@@ -15,6 +9,7 @@
     </string-array>
 
     <string-array name="locationsValues">
+        <item>0,0</item>
         <item>40.7417544,-74.0086348</item>
         <item>37.7577627,-122.4726194</item>
         <item>38.8994613,-77.0846063</item>

@@ -81,7 +81,6 @@ public class MainListFragment extends Fragment
     static final int REQUEST_PERMISSION_GET_ACCOUNTS = 1003;
     static final int REQUEST_PERMISSION_LOCATION = 1004;
     private static final String PREF_ACCOUNT_NAME = "accountName";
-    public int which;
 
     GoogleAccountCredential mCredential;
 
@@ -139,6 +138,11 @@ public class MainListFragment extends Fragment
     public void onStart() {
         mGoogleApiClient.connect();
         super.onStart();
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String prefLocation = prefs.getString("pref_location", "defaultValue");
+
+        getResultsFromApi(prefLocation);
     }
 
     @Override
@@ -272,7 +276,7 @@ public class MainListFragment extends Fragment
         }
     }
 
-       private void fabClicked(View view) {
+    private void fabClicked(View view) {
         mFab.setEnabled(false);
         createDialog();
         mFab.setEnabled(true);
@@ -281,10 +285,14 @@ public class MainListFragment extends Fragment
 
     private void createDialog() {
 
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String prefLocation = prefs.getString("pref_location", "defaultValue");
+        int prefLocationInt = locationToDialogInt(prefLocation);
+
         new MaterialDialog.Builder(getActivity())
                 .title(R.string.dialog_location_title)
-                .items(R.array.currentLocationValues)
-                .itemsCallbackSingleChoice(0, new MaterialDialog.ListCallbackSingleChoice() {
+                .items(R.array.locations)
+                .itemsCallbackSingleChoice(prefLocationInt, new MaterialDialog.ListCallbackSingleChoice() {
 
                     @Override
                     public boolean onSelection(MaterialDialog dialog, View view, int which, CharSequence text) {
@@ -297,6 +305,29 @@ public class MainListFragment extends Fragment
                 .show();
     }
 
+
+    private int locationToDialogInt(String prefLocation) {
+
+        int chosen;
+
+        switch (prefLocation) {
+            case "40.7417544,-74.0086348":
+                chosen = 1;
+                break;
+            case "37.7577627,-122.4726194":
+                chosen = 2;
+                break;
+            case "38.8994613,-77.0846063":
+                chosen = 3;
+                break;
+            default:
+                chosen = 0;
+                break;
+
+        }
+        return chosen;
+    }
+
     private String toLatLng(int i) {
 
         String chosen = "";
@@ -306,18 +337,23 @@ public class MainListFragment extends Fragment
                 chosen = lastLocation.getLatitude() + ", " + lastLocation.getLongitude();
                 break;
             case 1:
-                chosen = locationValuesList[0];
-                break;
-            case 2:
                 chosen = locationValuesList[1];
                 break;
-            case 3:
+            case 2:
                 chosen = locationValuesList[2];
+                break;
+            case 3:
+                chosen = locationValuesList[3];
                 break;
             default:
                 break;
 
         }
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString("pref_location", chosen);
+        editor.commit();
+
         return chosen;
     }
 
@@ -337,10 +373,7 @@ public class MainListFragment extends Fragment
             mCredential.setSelectedAccountName(accountName);
 
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-            //String query = prefs.getString(getString(R.string.pref_search_query), "default query");
-
             String publishedAfter = prefs.getString(getString(R.string.pref_published_after), "day"); // published after 1 day
-            // String lastLocation = prefs.getString(getString(R.string.pref_location), "40.7417544,-74.0086348"); //new york
             String radius = prefs.getString(getString(R.string.pref_radius), "1km");
 
             new MakeRequestTask(publishedAfter, locationChosen, radius).execute();
@@ -352,6 +385,7 @@ public class MainListFragment extends Fragment
             Toast.makeText(getActivity(), "No network connection available.", Toast.LENGTH_SHORT);
         }
     }
+
     /**
      * Display an error dialog showing that Google Play Services is missing
      * or out of date.
@@ -448,12 +482,12 @@ public class MainListFragment extends Fragment
     }
 
     @Override
-    public void onConnected( Bundle bundle) {
+    public void onConnected(Bundle bundle) {
         locationPermission();
     }
 
     @AfterPermissionGranted(REQUEST_PERMISSION_LOCATION)
-    private void locationPermission(){
+    private void locationPermission() {
         if (EasyPermissions.hasPermissions(
                 getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION)) {
 
@@ -463,8 +497,7 @@ public class MainListFragment extends Fragment
             } else {
                 handleNewLocation(lastLocation);
             }
-        }
-        else{
+        } else {
             EasyPermissions.requestPermissions(
                     this,
                     "This app needs to access your Google account (via Contacts).",
@@ -472,6 +505,7 @@ public class MainListFragment extends Fragment
                     Manifest.permission.ACCESS_COARSE_LOCATION);
         }
     }
+
     @Override
     public void onConnectionSuspended(int i) {
         Log.i(TAG, "Connection suspended");
@@ -509,7 +543,7 @@ public class MainListFragment extends Fragment
 
     @Override
     public void onLocationChanged(Location location) {
-        Toast.makeText(getActivity(), "location :"+location.getLatitude()+" , "+location.getLongitude(), Toast.LENGTH_SHORT).show();
+        Toast.makeText(getActivity(), "location :" + location.getLatitude() + " , " + location.getLongitude(), Toast.LENGTH_SHORT).show();
     }
 
     protected synchronized void buildGoogleApiClient() {
@@ -530,7 +564,7 @@ public class MainListFragment extends Fragment
 
     }
 
-    private void handleNewLocation(Location location){
+    private void handleNewLocation(Location location) {
         Log.d(TAG, location.toString());
 
         double currentLatitude = location.getLatitude();
