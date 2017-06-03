@@ -83,7 +83,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
         buildGoogleApiClient();
         createLocationRequest();
-        App app = ((App)getApplicationContext());
+        App app = ((App) getApplicationContext());
         app.setmCredential(mCredential);
 
         toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -91,6 +91,8 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         viewPager = (ViewPager) findViewById(R.id.viewpager);
+
+        //Big Refactor!! get location async. this onPost
 //        setupViewPager(viewPager);
 //
 //        tabLayout = (TabLayout) findViewById(R.id.tabs);
@@ -100,7 +102,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        App app = ((App)getApplicationContext());
+        App app = ((App) getApplicationContext());
         app.setmCredential(null);
     }
 
@@ -207,6 +209,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     @Override
     public void onConnected(@Nullable Bundle bundle) {
         //locationPermission();
+        //Big Refactor!! get location async. this onDoInBack
         new LocationAsync().execute();
     }
 
@@ -294,20 +297,20 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
         @Override
         public Fragment getItem(int position) {
-            String location  = lastLocation.getLatitude() + ", " + lastLocation.getLongitude();
+            String location = lastLocation.getLatitude() + ", " + lastLocation.getLongitude();
             Fragment fragment;
             Bundle bundle;
             switch (position) {
                 case 0:
                     fragment = new MainListFragment();
                     bundle = new Bundle();
-                    bundle.putString(EXTRA_LOCATION ,location);
+                    bundle.putString(EXTRA_LOCATION, location);
                     fragment.setArguments(bundle);
                     break;
                 case 1:
                     fragment = new MapLocationsFragment();
                     bundle = new Bundle();
-                    bundle.putString(EXTRA_LOCATION ,location);
+                    bundle.putString(EXTRA_LOCATION, location);
                     fragment.setArguments(bundle);
                     break;
                 case 2:
@@ -453,7 +456,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         }
     }
 
-    class LocationAsync extends AsyncTask<Void,Void,Location>{
+    class LocationAsync extends AsyncTask<Void, Void, Location> {
 
         @Override
         protected Location doInBackground(Void... voids) {
