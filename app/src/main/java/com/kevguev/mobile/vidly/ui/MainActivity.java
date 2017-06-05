@@ -2,9 +2,11 @@ package com.kevguev.mobile.vidly.ui;
 
 import android.Manifest;
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
+import android.content.SharedPreferences;
 import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -12,18 +14,25 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ListView;
 import android.widget.Toast;
 
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -33,13 +42,19 @@ import com.google.android.gms.location.LocationServices;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.youtube.YouTubeScopes;
+import com.google.api.services.youtube.model.Video;
 import com.kevguev.mobile.vidly.App;
 import com.kevguev.mobile.vidly.Constants;
 import com.kevguev.mobile.vidly.R;
+import com.kevguev.mobile.vidly.YoutubeResponseListener;
+import com.kevguev.mobile.vidly.model.ListItem;
+import com.kevguev.mobile.vidly.model.MakeRequestTask;
+import com.kevguev.mobile.vidly.model.SearchData;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
@@ -52,7 +67,8 @@ import static com.kevguev.mobile.vidly.Constants.REQUEST_ACCOUNT_PICKER;
 public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks,
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
-        LocationListener {
+        LocationListener,
+        YoutubeResponseListener {
 
     private static final String[] SCOPES = {YouTubeScopes.YOUTUBE_READONLY};
     protected static final String TAG = MainActivity.class.getSimpleName();
@@ -66,6 +82,9 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     private Toolbar toolbar;
     private TabLayout tabLayout;
     private ViewPager viewPager;
+    ProgressDialog mProgress;
+    FloatingActionButton mFab;
+    ViewPagerAdapter adapter;
 
     /**
      * Create the main activity.
@@ -76,6 +95,9 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        mProgress = new ProgressDialog(this);
+        mProgress.setMessage("Retrieving user location...");
 
         mCredential = GoogleAccountCredential.usingOAuth2(
                 this.getApplicationContext(), Arrays.asList(SCOPES))
@@ -91,6 +113,14 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         viewPager = (ViewPager) findViewById(R.id.viewpager);
+        mFab = (FloatingActionButton) findViewById(R.id.fab);
+        mFab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                fabClicked(view);
+            }
+        });
+
 
         //Big Refactor!! get location async. this onPost
 //        setupViewPager(viewPager);
@@ -109,6 +139,8 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     @Override
     protected void onStart() {
         mGoogleApiClient.connect();
+        //TODO: start first call here
+
         super.onStart();
     }
 
@@ -152,13 +184,113 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         super.onActivityResult(requestCode, resultCode, data);
     }
 
+    private void fabClicked(View view) {
+        mFab.setEnabled(false);
+        createDialog();
+        mFab.setEnabled(true);
+    }
 
-    private void setupViewPager(ViewPager viewPager) {
-        ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
-        adapter.addFragment(new MainListFragment(), "LIST");
-        adapter.addFragment(new MapLocationsFragment(), "MAP");
-        adapter.addFragment(new FavoritesFragment(), "FAV");
-        viewPager.setAdapter(adapter);
+    private void createDialog() {
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        String prefLocation = prefs.getString("pref_location", "defaultValue");
+        int prefLocationInt = locationToDialogInt(prefLocation);
+
+        new MaterialDialog.Builder(this)
+                .title(R.string.dialog_location_title)
+                .items(R.array.locations)
+                .itemsCallbackSingleChoice(prefLocationInt, new MaterialDialog.ListCallbackSingleChoice() {
+
+                    @Override
+                    public boolean onSelection(MaterialDialog dialog, View view, int which, CharSequence text) {
+
+                        getResultsFromApi(toLatLng(which));
+                        return true;
+                    }
+                })
+                .positiveText(R.string.choose)
+                .show();
+    }
+
+
+    private int locationToDialogInt(String prefLocation) {
+
+        int chosen;
+
+        switch (prefLocation) {
+            case "40.7417544,-74.0086348":
+                chosen = 1;
+                break;
+            case "37.7577627,-122.4726194":
+                chosen = 2;
+                break;
+            case "38.8994613,-77.0846063":
+                chosen = 3;
+                break;
+            default:
+                chosen = 0;
+                break;
+
+        }
+        return chosen;
+    }
+
+    private String toLatLng(int i) {
+
+        String chosen = "";
+        String[] locationValuesList = getResources().getStringArray(R.array.locationsValues);
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+
+        switch (i) {
+
+            case 0:
+                chosen = lastLocation.getLatitude() + ", " + lastLocation.getLongitude();
+                break;
+            case 1:
+                chosen = locationValuesList[1];
+                break;
+            case 2:
+                chosen = locationValuesList[2];
+                break;
+            case 3:
+                chosen = locationValuesList[3];
+                break;
+            default:
+                break;
+
+        }
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString("pref_location", chosen);
+        editor.commit();
+
+        return chosen;
+    }
+
+    private void getResultsFromApi(String locationChosen) {
+
+        App app = ((App) getApplicationContext());
+        String accountName = getPreferences(Context.MODE_PRIVATE)
+                .getString(PREF_ACCOUNT_NAME, null);
+        if (!isGooglePlayServicesAvailable()) {
+            acquireGooglePlayServices();
+        } else if (accountName != null) {
+
+            app.getmCredential().setSelectedAccountName(accountName);
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+            String publishedAfter = prefs.getString(getString(R.string.pref_published_after), "day"); // published after 1 day
+            String radius = prefs.getString(getString(R.string.pref_radius), "1km");
+
+            mProgress.show(); // on pre
+            MakeRequestTask request = new MakeRequestTask(publishedAfter, locationChosen, radius, this);
+            request.delegate = this;
+            request.execute();
+
+            //issue where mCredentials.setName erases after every launch
+        } else if (app.getmCredential().getSelectedAccountName() == null) {
+            chooseAccount();
+        } else if (!isDeviceOnline()) {
+            Toast.makeText(this, "No network connection available.", Toast.LENGTH_SHORT);
+        }
     }
 
     @Override
@@ -285,15 +417,79 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         }
     }
 
+    private void setupViewPager(ViewPager viewPager) {
+        adapter = new ViewPagerAdapter(getSupportFragmentManager());
+        adapter.addFragment(new MainListFragment(), "LIST");
+        adapter.addFragment(new MapLocationsFragment(), "MAP");
+        adapter.addFragment(new FavoritesFragment(), "FAV");
+        viewPager.setAdapter(adapter);
+    }
+
+    //feed the results into the other fragments
+    @Override
+    public void postResult(List<Video> videos) {
+        if (videos == null || videos.size() == 0) {
+            mProgress.hide();
+            Toast.makeText(this, "No results returned.", Toast.LENGTH_SHORT);
+        } else {
+            //populate list
+            mProgress.hide();
+
+            MainListFragment listFragment = (MainListFragment) adapter.getRegisteredFragment(0);
+            SearchData mSearchData = new SearchData(((App)getApplicationContext()).getmCredential());
+            listFragment.listData = (ArrayList) mSearchData.getListData(videos);
+            listFragment.adapter.setListData(listFragment.listData);
+            listFragment.adapter.notifyDataSetChanged();
+
+            //populate map !
+            MapLocationsFragment mapFragment = (MapLocationsFragment) adapter.getRegisteredFragment(1);
+            mapFragment.updateGoogleMap(videos);
+        }
+    }
+
+
+    public List<ListItem> getListData(List<Video> videos) {
+        final int icon = R.drawable.ic_local_play_black_36dp;
+
+        List<ListItem> data = new ArrayList<>();
+
+        //create ListItem with dummy data and then add it to our list
+        for (Video video: videos) {
+            ListItem item = new ListItem();
+            item.setImageResId(icon);
+            item.setTitle(video.getSnippet().getTitle());
+            item.setSubtitle(video.getSnippet().getDescription());
+            data.add(item);
+        }
+
+        return data;
+    }
     private class ViewPagerAdapter extends FragmentPagerAdapter {
 
         private final List<Fragment> mFragmentList = new ArrayList<>();
         private final List<String> mFragmentTitleList = new ArrayList<>();
+        SparseArray<Fragment> registeredFragments = new SparseArray<>();
 
         ViewPagerAdapter(FragmentManager manager) {
             super(manager);
         }
 
+        @Override
+        public Object instantiateItem(ViewGroup container, int position) {
+            Fragment fragment = (Fragment) super.instantiateItem(container, position);
+            registeredFragments.put(position, fragment);
+            return fragment;
+        }
+
+        @Override
+        public void destroyItem(ViewGroup container, int position, Object object) {
+            registeredFragments.remove(position);
+            super.destroyItem(container, position, object);
+        }
+
+        public Fragment getRegisteredFragment(int position) {
+            return registeredFragments.get(position);
+        }
 
         @Override
         public Fragment getItem(int position) {
@@ -456,7 +652,15 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         }
     }
 
+    /**
+     * Get location from user from a background thread
+     */
     class LocationAsync extends AsyncTask<Void, Void, Location> {
+
+        @Override
+        protected void onPreExecute() {
+            mProgress.show();
+        }
 
         @Override
         protected Location doInBackground(Void... voids) {
@@ -467,10 +671,14 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         @Override
         protected void onPostExecute(Location location) {
             super.onPostExecute(location);
+
+            //TODO: error handle
+            mProgress.hide();
             setupViewPager(viewPager);
 
             tabLayout = (TabLayout) findViewById(R.id.tabs);
             tabLayout.setupWithViewPager(viewPager);
         }
     }
+
 }
