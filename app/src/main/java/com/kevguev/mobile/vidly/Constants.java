@@ -9,6 +9,7 @@ public final class Constants {
     public static final String EXTRA_QUOTE = "EXTRA_QUOTE";
     public static final String EXTRA_ATTR = "EXTRA_ATTR";
     public static final String EXTRA_LOCATION = "EXTRA_LOCATION";
+    public static final String EXTRA_CURRENT_LOCATION = "EXTRA_CURRENT_LOCATION";
     public static final int REQUEST_ACCOUNT_PICKER = 1000;
     public static final int REQUEST_AUTHORIZATION = 1001;
     public static final int REQUEST_GOOGLE_PLAY_SERVICES = 1002;

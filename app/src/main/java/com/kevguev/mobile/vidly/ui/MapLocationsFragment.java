@@ -50,9 +50,10 @@ public class MapLocationsFragment extends Fragment {
 
     MapView mMapView;
     private GoogleMap googleMap;
-    String lastLocation;
+    public String lastLocation;
     ProgressDialog mProgress;
-    //FloatingActionButton mFab;
+    //FloatingActionButton m
+    // ;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -200,29 +201,6 @@ public class MapLocationsFragment extends Fragment {
      * of the preconditions are not satisfied, the app will prompt the user as
      * appropriate.
      */
-    private void getResultsFromApi(String locationChosen) {
-
-        App app = ((App) getActivity().getApplicationContext());
-        String accountName = getActivity().getPreferences(Context.MODE_PRIVATE)
-                .getString(PREF_ACCOUNT_NAME, null);
-        if (!((MainActivity) getActivity()).isGooglePlayServicesAvailable()) {
-            ((MainActivity) getActivity()).acquireGooglePlayServices();
-        } else if (accountName != null) {
-
-            app.getmCredential().setSelectedAccountName(accountName);
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-            String publishedAfter = prefs.getString(getString(R.string.pref_published_after), "day"); // published after 1 day
-            String radius = prefs.getString(getString(R.string.pref_radius), "1km");
-
-            new MakeLocationRequestTask(publishedAfter, locationChosen, radius).execute();
-
-            //issue where mCredentials.setName erases after every launch
-        } else if (app.getmCredential().getSelectedAccountName() == null) {
-            ((MainActivity) getActivity()).chooseAccount();
-        } else if (!((MainActivity) getActivity()).isDeviceOnline()) {
-            Toast.makeText(getActivity(), "No network connection available.", Toast.LENGTH_SHORT);
-        }
-    }
 
     @Override
     public void onResume() {
@@ -292,83 +270,83 @@ public class MapLocationsFragment extends Fragment {
             }
         }
     }
-    public class MakeLocationRequestTask extends AsyncTask<Void, Void, List<Video>> {
-
-        /**
-         * An asynchronous task that handles the YouTube Data API call.
-         * Placing the API calls in their own task ensures the UI stays responsive.
-         */
-        private Exception mLastError = null;
-        SearchData mSearchData;
-        String query, location, radius, publishedAfter;
-
-        public MakeLocationRequestTask(String publishedAfter, String location, String radius) {
-            //this.query = query;
-            this.publishedAfter = publishedAfter;
-            this.location = location;
-            this.radius = radius;
-        }
-
-        /**
-         * Background task to call YouTube Data API.
-         *
-         * @param params no parameters needed for this task.
-         */
-        @Override
-        protected List<Video> doInBackground(Void... params) {
-            try {
-                App app = ((App) getActivity().getApplicationContext());
-                mSearchData = new SearchData(app.getmCredential());
-                return mSearchData.getDataFromApi(publishedAfter, location, radius);
-            } catch (Exception e) {
-                mLastError = e;
-                cancel(true);
-                return null;
-            }
-        }
-
-        /**
-         * Fetch information about the "GoogleDevelopers" YouTube channel.
-         *
-         * @return List of Strings containing information about the channel.
-         * @throws IOException
-         */
-
-        @Override
-        protected void onPreExecute() {
-            mProgress.show();
-        }
-
-        @Override
-        protected void onPostExecute(List<Video> output) {
-            mProgress.hide();
-            if (output == null || output.size() == 0) {
-                Toast.makeText(getActivity(), "No results returned.", Toast.LENGTH_SHORT);
-
-            } else {
-                updateGoogleMap(output);
-            }
-        }
-
-        @Override
-        protected void onCancelled() {
-            mProgress.hide();
-            if (mLastError != null) {
-                if (mLastError instanceof GooglePlayServicesAvailabilityIOException) {
-                    ((MainActivity) getActivity()).showGooglePlayServicesAvailabilityErrorDialog(
-                            ((GooglePlayServicesAvailabilityIOException) mLastError)
-                                    .getConnectionStatusCode());
-                } else if (mLastError instanceof UserRecoverableAuthIOException) {
-                    startActivityForResult(
-                            ((UserRecoverableAuthIOException) mLastError).getIntent(),
-                            REQUEST_AUTHORIZATION);
-                } else {
-                    Toast.makeText(getActivity(), "The following error occurred:\n"
-                            + mLastError.getMessage(), Toast.LENGTH_SHORT);
-                }
-            } else {
-                Toast.makeText(getActivity(), "Request cancelled.", Toast.LENGTH_SHORT);
-            }
-        }
-    }
+//    public class MakeLocationRequestTask extends AsyncTask<Void, Void, List<Video>> {
+//
+//        /**
+//         * An asynchronous task that handles the YouTube Data API call.
+//         * Placing the API calls in their own task ensures the UI stays responsive.
+//         */
+//        private Exception mLastError = null;
+//        SearchData mSearchData;
+//        String query, location, radius, publishedAfter;
+//
+//        public MakeLocationRequestTask(String publishedAfter, String location, String radius) {
+//            //this.query = query;
+//            this.publishedAfter = publishedAfter;
+//            this.location = location;
+//            this.radius = radius;
+//        }
+//
+//        /**
+//         * Background task to call YouTube Data API.
+//         *
+//         * @param params no parameters needed for this task.
+//         */
+//        @Override
+//        protected List<Video> doInBackground(Void... params) {
+//            try {
+//                App app = ((App) getActivity().getApplicationContext());
+//                mSearchData = new SearchData(app.getmCredential());
+//                return mSearchData.getDataFromApi(publishedAfter, location, radius);
+//            } catch (Exception e) {
+//                mLastError = e;
+//                cancel(true);
+//                return null;
+//            }
+//        }
+//
+//        /**
+//         * Fetch information about the "GoogleDevelopers" YouTube channel.
+//         *
+//         * @return List of Strings containing information about the channel.
+//         * @throws IOException
+//         */
+//
+//        @Override
+//        protected void onPreExecute() {
+//            mProgress.show();
+//        }
+//
+//        @Override
+//        protected void onPostExecute(List<Video> output) {
+//            mProgress.hide();
+//            if (output == null || output.size() == 0) {
+//                Toast.makeText(getActivity(), "No results returned.", Toast.LENGTH_SHORT);
+//
+//            } else {
+//                updateGoogleMap(output);
+//            }
+//        }
+//
+//        @Override
+//        protected void onCancelled() {
+//            mProgress.hide();
+//            if (mLastError != null) {
+//                if (mLastError instanceof GooglePlayServicesAvailabilityIOException) {
+//                    ((MainActivity) getActivity()).showGooglePlayServicesAvailabilityErrorDialog(
+//                            ((GooglePlayServicesAvailabilityIOException) mLastError)
+//                                    .getConnectionStatusCode());
+//                } else if (mLastError instanceof UserRecoverableAuthIOException) {
+//                    startActivityForResult(
+//                            ((UserRecoverableAuthIOException) mLastError).getIntent(),
+//                            REQUEST_AUTHORIZATION);
+//                } else {
+//                    Toast.makeText(getActivity(), "The following error occurred:\n"
+//                            + mLastError.getMessage(), Toast.LENGTH_SHORT);
+//                }
+//            } else {
+//                Toast.makeText(getActivity(), "Request cancelled.", Toast.LENGTH_SHORT);
+//            }
+//        }
+//    }
 }

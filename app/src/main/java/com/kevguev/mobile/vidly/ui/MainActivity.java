@@ -1,19 +1,14 @@
 package com.kevguev.mobile.vidly.ui;
 
 import android.Manifest;
-import android.app.Dialog;
+import android.accounts.AccountManager;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.location.Location;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
@@ -29,55 +24,43 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ListView;
 import android.widget.Toast;
 
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationListener;
-import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.youtube.YouTubeScopes;
 import com.google.api.services.youtube.model.Video;
 import com.kevguev.mobile.vidly.App;
+import com.kevguev.mobile.vidly.AppUtils;
 import com.kevguev.mobile.vidly.Constants;
 import com.kevguev.mobile.vidly.R;
 import com.kevguev.mobile.vidly.YoutubeResponseListener;
-import com.kevguev.mobile.vidly.model.ListItem;
 import com.kevguev.mobile.vidly.model.MakeRequestTask;
 import com.kevguev.mobile.vidly.model.SearchData;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
+import static com.kevguev.mobile.vidly.Constants.EXTRA_CURRENT_LOCATION;
 import static com.kevguev.mobile.vidly.Constants.EXTRA_LOCATION;
 import static com.kevguev.mobile.vidly.Constants.PREF_ACCOUNT_NAME;
 import static com.kevguev.mobile.vidly.Constants.REQUEST_ACCOUNT_PICKER;
+import static com.kevguev.mobile.vidly.Constants.REQUEST_AUTHORIZATION;
+import static com.kevguev.mobile.vidly.Constants.REQUEST_GOOGLE_PLAY_SERVICES;
 
 //find out whats being uploaded near you
 public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks,
-        GoogleApiClient.ConnectionCallbacks,
-        GoogleApiClient.OnConnectionFailedListener,
-        LocationListener,
         YoutubeResponseListener {
 
-    private static final String[] SCOPES = {YouTubeScopes.YOUTUBE_READONLY};
     protected static final String TAG = MainActivity.class.getSimpleName();
-
-    GoogleAccountCredential mCredential;
-    GoogleApiClient mGoogleApiClient;
-    LocationRequest mLocationRequest;
-
-    private Location lastLocation;
 
     private Toolbar toolbar;
     private TabLayout tabLayout;
@@ -85,6 +68,10 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     ProgressDialog mProgress;
     FloatingActionButton mFab;
     ViewPagerAdapter adapter;
+    String currentLocation;
+    GoogleAccountCredential mCredential;
+    private static final String[] SCOPES = {YouTubeScopes.YOUTUBE_READONLY};
+
 
     /**
      * Create the main activity.
@@ -96,17 +83,12 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mProgress = new ProgressDialog(this);
-        mProgress.setMessage("Retrieving user location...");
-
         mCredential = GoogleAccountCredential.usingOAuth2(
                 this.getApplicationContext(), Arrays.asList(SCOPES))
                 .setBackOff(new ExponentialBackOff());
 
-        buildGoogleApiClient();
-        createLocationRequest();
-        App app = ((App) getApplicationContext());
-        app.setmCredential(mCredential);
+        mProgress = new ProgressDialog(this);
+        mProgress.setMessage("Retrieving Videos...");
 
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -121,12 +103,20 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             }
         });
 
+        setupViewPager(viewPager);
 
+        tabLayout = (TabLayout) findViewById(R.id.tabs);
+        tabLayout.setupWithViewPager(viewPager);
         //Big Refactor!! get location async. this onPost
 //        setupViewPager(viewPager);
 //
 //        tabLayout = (TabLayout) findViewById(R.id.tabs);
 //        tabLayout.setupWithViewPager(viewPager);
+
+        Intent i = getIntent();
+        if(i != null){
+            currentLocation = i.getStringExtra(EXTRA_CURRENT_LOCATION);
+        }
     }
 
     @Override
@@ -138,33 +128,22 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
     @Override
     protected void onStart() {
-        mGoogleApiClient.connect();
         //TODO: start first call here
+        //if current location not set, make a call to get current location
+        //  call youtube ws inside here with current location
+        //else call yt location with last saved pref
 
+        if(currentLocation != null){
+            getResultsFromApi(currentLocation);
+        }
+        else {
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+            String prefLocation = prefs.getString("pref_location", null);
+            if (prefLocation != null) {
+                getResultsFromApi(prefLocation);
+            }
+        }
         super.onStart();
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        if (mGoogleApiClient.isConnected()) {
-            mGoogleApiClient.disconnect();
-        }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        mGoogleApiClient.connect();
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (mGoogleApiClient.isConnected()) {
-            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
-            mGoogleApiClient.disconnect();
-        }
     }
 
     /**
@@ -182,6 +161,38 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     protected void onActivityResult(
             int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        switch(requestCode) {
+            case REQUEST_GOOGLE_PLAY_SERVICES:
+                if (resultCode != RESULT_OK) {
+                    Toast.makeText(this,
+                            "This app requires Google Play Services. Please install " +
+                                    "Google Play Services on your device and relaunch this app.",Toast.LENGTH_SHORT).show();
+                } else {
+                    //getResultsFromApi();
+                }
+                break;
+            case REQUEST_ACCOUNT_PICKER:
+                if (resultCode == RESULT_OK && data != null &&
+                        data.getExtras() != null) {
+                    String accountName =
+                            data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
+                    if (accountName != null) {
+                        SharedPreferences settings =
+                                getPreferences(Context.MODE_PRIVATE);
+                        SharedPreferences.Editor editor = settings.edit();
+                        editor.putString(PREF_ACCOUNT_NAME, accountName);
+                        editor.apply();
+                        mCredential.setSelectedAccountName(accountName);
+                        //getResultsFromApi();
+                    }
+                }
+                break;
+            case REQUEST_AUTHORIZATION:
+                if (resultCode == RESULT_OK) {
+                    //getResultsFromApi();
+                }
+                break;
+        }
     }
 
     private void fabClicked(View view) {
@@ -194,7 +205,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         String prefLocation = prefs.getString("pref_location", "defaultValue");
-        int prefLocationInt = locationToDialogInt(prefLocation);
+        int prefLocationInt = AppUtils.locationToDialogInt(prefLocation);
 
         new MaterialDialog.Builder(this)
                 .title(R.string.dialog_location_title)
@@ -204,7 +215,12 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                     @Override
                     public boolean onSelection(MaterialDialog dialog, View view, int which, CharSequence text) {
 
-                        getResultsFromApi(toLatLng(which));
+                        if (which == 0) {
+                            getResultsFromApi(currentLocation);
+                        } else {
+                            getResultsFromApi(AppUtils.toLatLng(which, getApplicationContext()));
+                        }
+
                         return true;
                     }
                 })
@@ -212,70 +228,20 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 .show();
     }
 
-
-    private int locationToDialogInt(String prefLocation) {
-
-        int chosen;
-
-        switch (prefLocation) {
-            case "40.7417544,-74.0086348":
-                chosen = 1;
-                break;
-            case "37.7577627,-122.4726194":
-                chosen = 2;
-                break;
-            case "38.8994613,-77.0846063":
-                chosen = 3;
-                break;
-            default:
-                chosen = 0;
-                break;
-
-        }
-        return chosen;
-    }
-
-    private String toLatLng(int i) {
-
-        String chosen = "";
-        String[] locationValuesList = getResources().getStringArray(R.array.locationsValues);
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-
-        switch (i) {
-
-            case 0:
-                chosen = lastLocation.getLatitude() + ", " + lastLocation.getLongitude();
-                break;
-            case 1:
-                chosen = locationValuesList[1];
-                break;
-            case 2:
-                chosen = locationValuesList[2];
-                break;
-            case 3:
-                chosen = locationValuesList[3];
-                break;
-            default:
-                break;
-
-        }
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putString("pref_location", chosen);
-        editor.commit();
-
-        return chosen;
-    }
-
     private void getResultsFromApi(String locationChosen) {
 
-        App app = ((App) getApplicationContext());
-        String accountName = getPreferences(Context.MODE_PRIVATE)
-                .getString(PREF_ACCOUNT_NAME, null);
         if (!isGooglePlayServicesAvailable()) {
             acquireGooglePlayServices();
-        } else if (accountName != null) {
+        }  else if (mCredential.getSelectedAccountName() == null) {
+            chooseAccount();
+        } else if (!AppUtils.isDeviceOnline(this)) {
+            Toast.makeText(this, "No network connection available.", Toast.LENGTH_SHORT);
+        }
 
-            app.getmCredential().setSelectedAccountName(accountName);
+    //        String accountName = getPreferences(Context.MODE_PRIVATE)
+    //                .getString(PREF_ACCOUNT_NAME, null);
+       else {
+            //mCredential.setSelectedAccountName(accountName);
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
             String publishedAfter = prefs.getString(getString(R.string.pref_published_after), "day"); // published after 1 day
             String radius = prefs.getString(getString(R.string.pref_radius), "1km");
@@ -284,15 +250,72 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             MakeRequestTask request = new MakeRequestTask(publishedAfter, locationChosen, radius, this);
             request.delegate = this;
             request.execute();
-
-            //issue where mCredentials.setName erases after every launch
-        } else if (app.getmCredential().getSelectedAccountName() == null) {
-            chooseAccount();
-        } else if (!isDeviceOnline()) {
-            Toast.makeText(this, "No network connection available.", Toast.LENGTH_SHORT);
         }
     }
 
+    /**
+     * Check that Google Play services APK is installed and up to date.
+     *
+     * @return true if Google Play Services is available and up to
+     * date on this device; false otherwise.
+     */
+    public boolean isGooglePlayServicesAvailable() {
+        GoogleApiAvailability apiAvailability =
+                GoogleApiAvailability.getInstance();
+        final int connectionStatusCode =
+                apiAvailability.isGooglePlayServicesAvailable(this);
+        return connectionStatusCode == ConnectionResult.SUCCESS;
+    }
+
+    /**
+     * Attempt to resolve a missing, out-of-date, invalid or disabled Google
+     * Play Services installation via a user dialog, if possible.
+     */
+    public void acquireGooglePlayServices() {
+        GoogleApiAvailability apiAvailability =
+                GoogleApiAvailability.getInstance();
+        final int connectionStatusCode =
+                apiAvailability.isGooglePlayServicesAvailable(this);
+        if (apiAvailability.isUserResolvableError(connectionStatusCode)) {
+            AppUtils.showGooglePlayServicesAvailabilityErrorDialog(connectionStatusCode, this);
+        }
+    }
+
+    /**
+     * Attempts to set the account used with the API credentials. If an account
+     * name was previously saved it will use that one; otherwise an account
+     * picker dialog will be shown to the user. Note that the setting the
+     * account to use with the credentials object requires the app to have the
+     * GET_ACCOUNTS permission, which is requested here if it is not already
+     * present. The AfterPermissionGranted annotation indicates that this
+     * function will be rerun automatically whenever the GET_ACCOUNTS permission
+     * is granted.
+     */
+    @AfterPermissionGranted(Constants.REQUEST_PERMISSION_GET_ACCOUNTS)
+    public void chooseAccount() {
+        if (EasyPermissions.hasPermissions(
+                this, Manifest.permission.GET_ACCOUNTS)) {
+            String accountName = this.getPreferences(Context.MODE_PRIVATE)
+                    .getString(PREF_ACCOUNT_NAME, null);
+            if (accountName != null) {
+                mCredential.setSelectedAccountName(accountName);
+                ((App) getApplicationContext()).setmCredential(mCredential);
+                //getResultsFromApi(toLatLng(0));
+            } else {
+                // Start a dialog from which the user can choose an account
+                startActivityForResult(
+                        mCredential.newChooseAccountIntent(),
+                        REQUEST_ACCOUNT_PICKER);
+            }
+        } else {
+            // Request the GET_ACCOUNTS permission via a user dialog
+            EasyPermissions.requestPermissions(
+                    this,
+                    "This app needs to access your Google account (via Contacts).",
+                    Constants.REQUEST_PERMISSION_GET_ACCOUNTS,
+                    Manifest.permission.GET_ACCOUNTS);
+        }
+    }
     @Override
     public void onPermissionsGranted(int requestCode, List<String> perms) {
 
@@ -320,103 +343,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
     }
 
-    protected synchronized void buildGoogleApiClient() {
-        if (mGoogleApiClient == null) {
-            mGoogleApiClient = new GoogleApiClient.Builder(this)
-                    .addConnectionCallbacks(this)
-                    .addOnConnectionFailedListener(this)
-                    .addApi(LocationServices.API)
-                    .build();
-        }
-    }
-
-    private void createLocationRequest() {
-        mLocationRequest = LocationRequest.create();
-        mLocationRequest.setInterval(10 * 1000);
-        mLocationRequest.setFastestInterval(1 * 1000);
-        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-
-    }
-
-    @Override
-    public void onConnected(@Nullable Bundle bundle) {
-        //locationPermission();
-        //Big Refactor!! get location async. this onDoInBack
-        new LocationAsync().execute();
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-        Log.i(TAG, "Connection suspended");
-        mGoogleApiClient.connect();
-    }
-
-    @Override
-    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-        /*
-         * Google Play services can resolve some errors it detects.
-         * If the error has a resolution, try sending an Intent to
-         * start a Google Play services activity that can resolve
-         * error.
-         */
-        if (connectionResult.hasResolution()) {
-            try {
-                // Start an Activity that tries to resolve the error
-                connectionResult.startResolutionForResult(this, Constants.CONNECTION_FAILURE_RESOLUTION_REQUEST);
-                /*
-                 * Thrown if Google Play services canceled the original
-                 * PendingIntent
-                 */
-            } catch (IntentSender.SendIntentException e) {
-                // Log the error
-                e.printStackTrace();
-            }
-        } else {
-            /*
-             * If no resolution is available, display a dialog to the
-             * user with the error.
-             */
-            Log.i(TAG, "Location services connection failed with code " + connectionResult.getErrorCode());
-        }
-    }
-
-    @Override
-    public void onLocationChanged(Location location) {
-        Toast.makeText(this, "location :" + location.getLatitude() + " , " + location.getLongitude(), Toast.LENGTH_SHORT).show();
-
-    }
-
-    private void handleNewLocation(Location location) {
-        Log.d(TAG, location.toString());
-
-        lastLocation.setLatitude(location.getLatitude());
-        lastLocation.setLongitude(location.getLongitude());
-
-        //Toast.makeText(this, String.valueOf(currentLatitude) + " " + String.valueOf(currentLongitude), Toast.LENGTH_SHORT).show();
-        //LatLng latLng = new LatLng(currentLatitude, currentLongitude);
-
-    }
-
-    @AfterPermissionGranted(Constants.REQUEST_PERMISSION_LOCATION)
-    private void locationPermission() {
-        if (EasyPermissions.hasPermissions(
-                this, Manifest.permission.ACCESS_COARSE_LOCATION)) {
-
-            lastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-            if (lastLocation == null) {
-                LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
-            } else {
-                handleNewLocation(lastLocation);
-            }
-        } else {
-            EasyPermissions.requestPermissions(
-                    this,
-                    "This app needs to access your Google account (via Contacts).",
-                    Constants.REQUEST_PERMISSION_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION);
-        }
-    }
-
     private void setupViewPager(ViewPager viewPager) {
         adapter = new ViewPagerAdapter(getSupportFragmentManager());
         adapter.addFragment(new MainListFragment(), "LIST");
@@ -430,40 +356,24 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     public void postResult(List<Video> videos) {
         if (videos == null || videos.size() == 0) {
             mProgress.hide();
-            Toast.makeText(this, "No results returned.", Toast.LENGTH_SHORT);
+            Toast.makeText(this, "No results returned.", Toast.LENGTH_SHORT).show();
         } else {
-            //populate list
-            mProgress.hide();
 
+            mProgress.hide();
+            //populate list
             MainListFragment listFragment = (MainListFragment) adapter.getRegisteredFragment(0);
-            SearchData mSearchData = new SearchData(((App)getApplicationContext()).getmCredential());
+            SearchData mSearchData = new SearchData(((App) getApplicationContext()).getmCredential());
             listFragment.listData = (ArrayList) mSearchData.getListData(videos);
             listFragment.adapter.setListData(listFragment.listData);
             listFragment.adapter.notifyDataSetChanged();
 
             //populate map !
             MapLocationsFragment mapFragment = (MapLocationsFragment) adapter.getRegisteredFragment(1);
+            mapFragment.lastLocation = videos.get(0).getRecordingDetails().getLocation().getLatitude() + ", " + videos.get(0).getRecordingDetails().getLocation().getLongitude();
             mapFragment.updateGoogleMap(videos);
         }
     }
 
-
-    public List<ListItem> getListData(List<Video> videos) {
-        final int icon = R.drawable.ic_local_play_black_36dp;
-
-        List<ListItem> data = new ArrayList<>();
-
-        //create ListItem with dummy data and then add it to our list
-        for (Video video: videos) {
-            ListItem item = new ListItem();
-            item.setImageResId(icon);
-            item.setTitle(video.getSnippet().getTitle());
-            item.setSubtitle(video.getSnippet().getDescription());
-            data.add(item);
-        }
-
-        return data;
-    }
     private class ViewPagerAdapter extends FragmentPagerAdapter {
 
         private final List<Fragment> mFragmentList = new ArrayList<>();
@@ -493,7 +403,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
         @Override
         public Fragment getItem(int position) {
-            String location = lastLocation.getLatitude() + ", " + lastLocation.getLongitude();
+            String location = currentLocation;
             Fragment fragment;
             Bundle bundle;
             switch (position) {
@@ -558,127 +468,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    /**
-     * Display an error dialog showing that Google Play Services is missing
-     * or out of date.
-     *
-     * @param connectionStatusCode code describing the presence (or lack of)
-     *                             Google Play Services on this device.
-     */
-    void showGooglePlayServicesAvailabilityErrorDialog(
-            final int connectionStatusCode) {
-        GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
-        Dialog dialog = apiAvailability.getErrorDialog(
-                this,
-                connectionStatusCode,
-                Constants.REQUEST_GOOGLE_PLAY_SERVICES);
-        dialog.show();
-    }
-
-    /**
-     * Attempts to set the account used with the API credentials. If an account
-     * name was previously saved it will use that one; otherwise an account
-     * picker dialog will be shown to the user. Note that the setting the
-     * account to use with the credentials object requires the app to have the
-     * GET_ACCOUNTS permission, which is requested here if it is not already
-     * present. The AfterPermissionGranted annotation indicates that this
-     * function will be rerun automatically whenever the GET_ACCOUNTS permission
-     * is granted.
-     */
-    @AfterPermissionGranted(Constants.REQUEST_PERMISSION_GET_ACCOUNTS)
-    public void chooseAccount() {
-        if (EasyPermissions.hasPermissions(
-                this, Manifest.permission.GET_ACCOUNTS)) {
-            String accountName = this.getPreferences(Context.MODE_PRIVATE)
-                    .getString(PREF_ACCOUNT_NAME, null);
-            if (accountName != null) {
-                mCredential.setSelectedAccountName(accountName);
-                //getResultsFromApi(toLatLng(0));
-            } else {
-                // Start a dialog from which the user can choose an account
-                startActivityForResult(
-                        mCredential.newChooseAccountIntent(),
-                        REQUEST_ACCOUNT_PICKER);
-            }
-        } else {
-            // Request the GET_ACCOUNTS permission via a user dialog
-            EasyPermissions.requestPermissions(
-                    this,
-                    "This app needs to access your Google account (via Contacts).",
-                    Constants.REQUEST_PERMISSION_GET_ACCOUNTS,
-                    Manifest.permission.GET_ACCOUNTS);
-        }
-    }
-
-    /**
-     * Checks whether the device currently has a network connection.
-     *
-     * @return true if the device has a network connection, false otherwise.
-     */
-    public boolean isDeviceOnline() {
-        ConnectivityManager connMgr =
-                (ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
-        return (networkInfo != null && networkInfo.isConnected());
-    }
-
-    /**
-     * Check that Google Play services APK is installed and up to date.
-     *
-     * @return true if Google Play Services is available and up to
-     * date on this device; false otherwise.
-     */
-    public boolean isGooglePlayServicesAvailable() {
-        GoogleApiAvailability apiAvailability =
-                GoogleApiAvailability.getInstance();
-        final int connectionStatusCode =
-                apiAvailability.isGooglePlayServicesAvailable(this);
-        return connectionStatusCode == ConnectionResult.SUCCESS;
-    }
-
-    /**
-     * Attempt to resolve a missing, out-of-date, invalid or disabled Google
-     * Play Services installation via a user dialog, if possible.
-     */
-    public void acquireGooglePlayServices() {
-        GoogleApiAvailability apiAvailability =
-                GoogleApiAvailability.getInstance();
-        final int connectionStatusCode =
-                apiAvailability.isGooglePlayServicesAvailable(this);
-        if (apiAvailability.isUserResolvableError(connectionStatusCode)) {
-            showGooglePlayServicesAvailabilityErrorDialog(connectionStatusCode);
-        }
-    }
-
-    /**
-     * Get location from user from a background thread
-     */
-    class LocationAsync extends AsyncTask<Void, Void, Location> {
-
-        @Override
-        protected void onPreExecute() {
-            mProgress.show();
-        }
-
-        @Override
-        protected Location doInBackground(Void... voids) {
-            locationPermission();
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Location location) {
-            super.onPostExecute(location);
-
-            //TODO: error handle
-            mProgress.hide();
-            setupViewPager(viewPager);
-
-            tabLayout = (TabLayout) findViewById(R.id.tabs);
-            tabLayout.setupWithViewPager(viewPager);
-        }
     }
 
 }

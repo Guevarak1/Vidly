@@ -127,46 +127,6 @@ public class MainListFragment extends Fragment implements SearchAdapter.ItemClic
         super.onPause();
     }
 
-    //TODO: change getResultApi to pull from current location
-    //issue were after permissions are granted, user's location will be set to ny
-    //figure out how to get which location user has chosen post permission
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        switch (requestCode) {
-            case Constants.REQUEST_GOOGLE_PLAY_SERVICES:
-                if (resultCode != RESULT_OK) {
-                    Toast.makeText(getActivity(), "This app requires Google Play Services. Please install " +
-                            "Google Play Services on your device and relaunch this app.", Toast.LENGTH_SHORT);
-                } else {
-                    getResultsFromApi("40.7417544,-74.0086348");
-                }
-                break;
-            case Constants.REQUEST_ACCOUNT_PICKER:
-                if (resultCode == RESULT_OK && data != null &&
-                        data.getExtras() != null) {
-                    String accountName =
-                            data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
-                    if (accountName != null) {
-                        SharedPreferences settings =
-                                getActivity().getPreferences(Context.MODE_PRIVATE);
-                        SharedPreferences.Editor editor = settings.edit();
-                        editor.putString(PREF_ACCOUNT_NAME, accountName);
-                        editor.apply();
-                        App app = ((App)getActivity().getApplicationContext());
-                        app.getmCredential().setSelectedAccountName(accountName);
-                        getResultsFromApi("40.7417544,-74.0086348");
-                    }
-                }
-                break;
-            case REQUEST_AUTHORIZATION:
-                if (resultCode == RESULT_OK) {
-                    getResultsFromApi("40.7417544,-74.0086348");
-                }
-                break;
-        }
-    }
-
     @Override
     public void onItemClick(int p) {
         ListItem item = (ListItem) listData.get(p);
@@ -202,32 +162,32 @@ public class MainListFragment extends Fragment implements SearchAdapter.ItemClic
      * of the preconditions are not satisfied, the app will prompt the user as
      * appropriate.
      */
-    private void getResultsFromApi(String locationChosen) {
-
-        App app = ((App)getActivity().getApplicationContext());
-        String accountName = getActivity().getPreferences(Context.MODE_PRIVATE)
-                .getString(PREF_ACCOUNT_NAME, null);
-        if (!((MainActivity)getActivity()).isGooglePlayServicesAvailable()) {
-            ((MainActivity)getActivity()).acquireGooglePlayServices();
-        } else if (accountName != null) {
-
-            app.getmCredential().setSelectedAccountName(accountName);
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-            String publishedAfter = prefs.getString(getString(R.string.pref_published_after), "day"); // published after 1 day
-            String radius = prefs.getString(getString(R.string.pref_radius), "1km");
-
-            mProgress.show();
-            MakeRequestTask requestTask = new MakeRequestTask(publishedAfter, locationChosen, radius, getActivity());
-            requestTask.delegate = this;
-            requestTask.execute();
-
-            //issue where mCredentials.setName erases after every launch
-        } else if (app.getmCredential().getSelectedAccountName() == null) {
-            ((MainActivity)getActivity()).chooseAccount();
-        } else if (!((MainActivity)getActivity()).isDeviceOnline()) {
-            Toast.makeText(getActivity(), "No network connection available.", Toast.LENGTH_SHORT);
-        }
-    }
+//    private void getResultsFromApi(String locationChosen) {
+//
+//        App app = ((App)getActivity().getApplicationContext());
+//        String accountName = getActivity().getPreferences(Context.MODE_PRIVATE)
+//                .getString(PREF_ACCOUNT_NAME, null);
+//        if (!((MainActivity)getActivity()).isGooglePlayServicesAvailable()) {
+//            ((MainActivity)getActivity()).acquireGooglePlayServices();
+//        } else if (accountName != null) {
+//
+//            app.getmCredential().setSelectedAccountName(accountName);
+//            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+//            String publishedAfter = prefs.getString(getString(R.string.pref_published_after), "day"); // published after 1 day
+//            String radius = prefs.getString(getString(R.string.pref_radius), "1km");
+//
+//            mProgress.show();
+//            MakeRequestTask requestTask = new MakeRequestTask(publishedAfter, locationChosen, radius, getActivity());
+//            requestTask.delegate = this;
+//            requestTask.execute();
+//
+//            //issue where mCredentials.setName erases after every launch
+//        } else if (app.getmCredential().getSelectedAccountName() == null) {
+//            ((MainActivity)getActivity()).chooseAccount();
+//        } else if (!((MainActivity)getActivity()).isDeviceOnline()) {
+//            Toast.makeText(getActivity(), "No network connection available.", Toast.LENGTH_SHORT);
+//        }
+//    }
 
     @Override
     public void postResult(List<Video> asyncresult) {
