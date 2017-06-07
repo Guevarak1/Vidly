@@ -52,8 +52,6 @@ public class MapLocationsFragment extends Fragment {
     private GoogleMap googleMap;
     public String lastLocation;
     ProgressDialog mProgress;
-    //FloatingActionButton m
-    // ;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -71,15 +69,9 @@ public class MapLocationsFragment extends Fragment {
         // Inflate the layout for this fragment
         View rootView = inflater.inflate(R.layout.fragment_location, container, false);
 
+
         mProgress = new ProgressDialog(getActivity());
         mProgress.setMessage("Calling YouTube Data API ...");
-//        mFab = (FloatingActionButton) getActivity().findViewById(R.id.fab);
-//        mFab.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                fabClicked(view);
-//            }
-//        });
 
         mMapView = (MapView) rootView.findViewById(R.id.mapView);
         mMapView.onCreate(savedInstanceState);
@@ -113,95 +105,6 @@ public class MapLocationsFragment extends Fragment {
         return rootView;
     }
 
-//    private void fabClicked(View view) {
-//        mFab.setEnabled(false);
-//        createDialog();
-//        mFab.setEnabled(true);
-//
-//    }
-
-//    private void createDialog() {
-//
-//        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-//        String prefLocation = prefs.getString("pref_location", "defaultValue");
-//        int prefLocationInt = locationToDialogInt(prefLocation);
-//
-//        new MaterialDialog.Builder(getActivity())
-//                .title(R.string.dialog_location_title)
-//                .items(R.array.locations)
-//                .itemsCallbackSingleChoice(prefLocationInt, new MaterialDialog.ListCallbackSingleChoice() {
-//
-//                    @Override
-//                    public boolean onSelection(MaterialDialog dialog, View view, int which, CharSequence text) {
-//
-//                        getResultsFromApi(toLatLng(which));
-//                        return true;
-//                    }
-//                })
-//                .positiveText(R.string.choose)
-//                .show();
-//    }
-
-    private int locationToDialogInt(String prefLocation) {
-
-        int chosen;
-
-        switch (prefLocation) {
-            case "40.7417544,-74.0086348":
-                chosen = 1;
-                break;
-            case "37.7577627,-122.4726194":
-                chosen = 2;
-                break;
-            case "38.8994613,-77.0846063":
-                chosen = 3;
-                break;
-            default:
-                chosen = 0;
-                break;
-
-        }
-        return chosen;
-    }
-    private String toLatLng(int i) {
-
-        String chosen = "";
-        String[] locationValuesList = getResources().getStringArray(R.array.locationsValues);
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-
-        switch (i) {
-
-            case 0:
-                chosen = lastLocation;
-                break;
-            case 1:
-                chosen = locationValuesList[1];
-                break;
-            case 2:
-                chosen = locationValuesList[2];
-                break;
-            case 3:
-                chosen = locationValuesList[3];
-                break;
-            default:
-                break;
-
-        }
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putString("pref_location", chosen);
-        editor.commit();
-
-        return chosen;
-    }
-
-    /**
-     * Attempt to call the API, after verifying that all the preconditions are
-     * satisfied. The preconditions are: Google Play Services installed, an
-     * account was selected and the device currently has online access. If any
-     * of the preconditions are not satisfied, the app will prompt the user as
-     * appropriate.
-     */
-
     @Override
     public void onResume() {
         super.onResume();
@@ -217,10 +120,6 @@ public class MapLocationsFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-//        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-//        String prefLocation = prefs.getString("pref_location", "defaultValue");
-//
-//        getResultsFromApi(prefLocation);
     }
 
     @Override
@@ -266,87 +165,8 @@ public class MapLocationsFragment extends Fragment {
                         .position(coord)
                         .title(video.getSnippet().getTitle())
                         .icon(BitmapDescriptorFactory
-                                .fromResource(R.drawable.ic_local_play_black_36dp)));
+                                .defaultMarker(BitmapDescriptorFactory.HUE_CYAN)));
             }
         }
     }
-//    public class MakeLocationRequestTask extends AsyncTask<Void, Void, List<Video>> {
-//
-//        /**
-//         * An asynchronous task that handles the YouTube Data API call.
-//         * Placing the API calls in their own task ensures the UI stays responsive.
-//         */
-//        private Exception mLastError = null;
-//        SearchData mSearchData;
-//        String query, location, radius, publishedAfter;
-//
-//        public MakeLocationRequestTask(String publishedAfter, String location, String radius) {
-//            //this.query = query;
-//            this.publishedAfter = publishedAfter;
-//            this.location = location;
-//            this.radius = radius;
-//        }
-//
-//        /**
-//         * Background task to call YouTube Data API.
-//         *
-//         * @param params no parameters needed for this task.
-//         */
-//        @Override
-//        protected List<Video> doInBackground(Void... params) {
-//            try {
-//                App app = ((App) getActivity().getApplicationContext());
-//                mSearchData = new SearchData(app.getmCredential());
-//                return mSearchData.getDataFromApi(publishedAfter, location, radius);
-//            } catch (Exception e) {
-//                mLastError = e;
-//                cancel(true);
-//                return null;
-//            }
-//        }
-//
-//        /**
-//         * Fetch information about the "GoogleDevelopers" YouTube channel.
-//         *
-//         * @return List of Strings containing information about the channel.
-//         * @throws IOException
-//         */
-//
-//        @Override
-//        protected void onPreExecute() {
-//            mProgress.show();
-//        }
-//
-//        @Override
-//        protected void onPostExecute(List<Video> output) {
-//            mProgress.hide();
-//            if (output == null || output.size() == 0) {
-//                Toast.makeText(getActivity(), "No results returned.", Toast.LENGTH_SHORT);
-//
-//            } else {
-//                updateGoogleMap(output);
-//            }
-//        }
-//
-//        @Override
-//        protected void onCancelled() {
-//            mProgress.hide();
-//            if (mLastError != null) {
-//                if (mLastError instanceof GooglePlayServicesAvailabilityIOException) {
-//                    ((MainActivity) getActivity()).showGooglePlayServicesAvailabilityErrorDialog(
-//                            ((GooglePlayServicesAvailabilityIOException) mLastError)
-//                                    .getConnectionStatusCode());
-//                } else if (mLastError instanceof UserRecoverableAuthIOException) {
-//                    startActivityForResult(
-//                            ((UserRecoverableAuthIOException) mLastError).getIntent(),
-//                            REQUEST_AUTHORIZATION);
-//                } else {
-//                    Toast.makeText(getActivity(), "The following error occurred:\n"
-//                            + mLastError.getMessage(), Toast.LENGTH_SHORT);
-//                }
-//            } else {
-//                Toast.makeText(getActivity(), "Request cancelled.", Toast.LENGTH_SHORT);
-//            }
-//        }
-//    }
 }

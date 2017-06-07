@@ -62,13 +62,12 @@ import static com.kevguev.mobile.vidly.Constants.REQUEST_AUTHORIZATION;
 
 import com.kevguev.mobile.vidly.Constants;
 
-public class MainListFragment extends Fragment implements SearchAdapter.ItemClickCallback, YoutubeResponseListener{
+public class MainListFragment extends Fragment implements SearchAdapter.ItemClickCallback{
 
     ProgressDialog mProgress;
     private RecyclerView recView;
     public SearchAdapter adapter;
     public ArrayList listData;
-    private String lastLocation;
 
     public MainListFragment() {
         // Required empty public constructor
@@ -78,10 +77,7 @@ public class MainListFragment extends Fragment implements SearchAdapter.ItemClic
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Bundle bundle = this.getArguments();
-        if (bundle != null) {
-            lastLocation = bundle.getString(EXTRA_LOCATION, "");
-        }
+
     }
 
     @Override
@@ -105,11 +101,6 @@ public class MainListFragment extends Fragment implements SearchAdapter.ItemClic
     @Override
     public void onStart() {
         super.onStart();
-
-//        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-//        String prefLocation = prefs.getString("pref_location", "defaultValue");
-//
-//        getResultsFromApi(prefLocation);
     }
 
     @Override
@@ -152,136 +143,5 @@ public class MainListFragment extends Fragment implements SearchAdapter.ItemClic
         // pass new data to adapter and update
         adapter.setListData(listData);
         adapter.notifyDataSetChanged();
-
     }
-
-    /**
-     * Attempt to call the API, after verifying that all the preconditions are
-     * satisfied. The preconditions are: Google Play Services installed, an
-     * account was selected and the device currently has online access. If any
-     * of the preconditions are not satisfied, the app will prompt the user as
-     * appropriate.
-     */
-//    private void getResultsFromApi(String locationChosen) {
-//
-//        App app = ((App)getActivity().getApplicationContext());
-//        String accountName = getActivity().getPreferences(Context.MODE_PRIVATE)
-//                .getString(PREF_ACCOUNT_NAME, null);
-//        if (!((MainActivity)getActivity()).isGooglePlayServicesAvailable()) {
-//            ((MainActivity)getActivity()).acquireGooglePlayServices();
-//        } else if (accountName != null) {
-//
-//            app.getmCredential().setSelectedAccountName(accountName);
-//            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-//            String publishedAfter = prefs.getString(getString(R.string.pref_published_after), "day"); // published after 1 day
-//            String radius = prefs.getString(getString(R.string.pref_radius), "1km");
-//
-//            mProgress.show();
-//            MakeRequestTask requestTask = new MakeRequestTask(publishedAfter, locationChosen, radius, getActivity());
-//            requestTask.delegate = this;
-//            requestTask.execute();
-//
-//            //issue where mCredentials.setName erases after every launch
-//        } else if (app.getmCredential().getSelectedAccountName() == null) {
-//            ((MainActivity)getActivity()).chooseAccount();
-//        } else if (!((MainActivity)getActivity()).isDeviceOnline()) {
-//            Toast.makeText(getActivity(), "No network connection available.", Toast.LENGTH_SHORT);
-//        }
-//    }
-
-    @Override
-    public void postResult(List<Video> asyncresult) {
-        mProgress.hide();
-            if (asyncresult == null || asyncresult.size() == 0) {
-                Toast.makeText(getActivity(), "No results returned.", Toast.LENGTH_SHORT);
-
-            } else {
-                SearchData mSearchData = new SearchData(((App)getActivity().getApplicationContext()).getmCredential());
-                listData = (ArrayList) mSearchData.getListData(asyncresult);
-                adapter.setListData(listData);
-                adapter.notifyDataSetChanged();
-            }
-
-    }
-//    public class MakeRequestTask extends AsyncTask<Void, Void, List<Video>> {
-//
-//        /**
-//         * An asynchronous task that handles the YouTube Data API call.
-//         * Placing the API calls in their own task ensures the UI stays responsive.
-//         */
-//        private Exception mLastError = null;
-//        SearchData mSearchData;
-//        String query, location, radius, publishedAfter;
-//
-//        public MakeRequestTask(String publishedAfter, String location, String radius) {
-//            //this.query = query;
-//            this.publishedAfter = publishedAfter;
-//            this.location = location;
-//            this.radius = radius;
-//        }
-//
-//        /**
-//         * Background task to call YouTube Data API.
-//         *
-//         * @param params no parameters needed for this task.
-//         */
-//        @Override
-//        protected List<Video> doInBackground(Void... params) {
-//            try {
-//                App app = ((App)getActivity().getApplicationContext());
-//                mSearchData = new SearchData(app.getmCredential());
-//                return mSearchData.getDataFromApi(publishedAfter, location, radius);
-//            } catch (Exception e) {
-//                mLastError = e;
-//                cancel(true);
-//                return null;
-//            }
-//        }
-//
-//        /**
-//         * Fetch information about the "GoogleDevelopers" YouTube channel.
-//         *
-//         * @return List of Strings containing information about the channel.
-//         * @throws IOException
-//         */
-//
-//        @Override
-//        protected void onPreExecute() {
-//            mProgress.show();
-//        }
-//
-//        @Override
-//        protected void onPostExecute(List<Video> output) {
-//            mProgress.hide();
-//            if (output == null || output.size() == 0) {
-//                Toast.makeText(getActivity(), "No results returned.", Toast.LENGTH_SHORT);
-//
-//            } else {
-//                listData = (ArrayList) mSearchData.getListData(output);
-//                adapter.setListData(listData);
-//                adapter.notifyDataSetChanged();
-//            }
-//        }
-//
-//        @Override
-//        protected void onCancelled() {
-//            mProgress.hide();
-//            if (mLastError != null) {
-//                if (mLastError instanceof GooglePlayServicesAvailabilityIOException) {
-//                    ((MainActivity)getActivity()).showGooglePlayServicesAvailabilityErrorDialog(
-//                            ((GooglePlayServicesAvailabilityIOException) mLastError)
-//                                    .getConnectionStatusCode());
-//                } else if (mLastError instanceof UserRecoverableAuthIOException) {
-//                    startActivityForResult(
-//                            ((UserRecoverableAuthIOException) mLastError).getIntent(),
-//                            REQUEST_AUTHORIZATION);
-//                } else {
-//                    Toast.makeText(getActivity(), "The following error occurred:\n"
-//                            + mLastError.getMessage(), Toast.LENGTH_SHORT);
-//                }
-//            } else {
-//                Toast.makeText(getActivity(), "Request cancelled.", Toast.LENGTH_SHORT);
-//            }
-//        }
-//    }
 }

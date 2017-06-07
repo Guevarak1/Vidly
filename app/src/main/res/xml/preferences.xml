@@ -28,7 +28,7 @@
             android:summary="Where we will be searching"
             android:entries="@array/locations"
             android:entryValues="@array/locationsValues"
-            android:defaultValue="40.7417544,-74.0086348" />
+            android:defaultValue="0, 0" />
 
         <android.support.v7.preference.ListPreference
             android:key="@string/pref_radius"

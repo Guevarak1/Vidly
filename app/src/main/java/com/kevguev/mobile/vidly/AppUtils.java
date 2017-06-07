@@ -38,14 +38,16 @@ public class AppUtils {
         return chosen;
     }
 
-    public static String toLatLng(int i, Context context) {
+    public static String toLatLng(int i,String currentLocation, Context context) {
 
         String chosen = "";
         String[] locationValuesList = context.getResources().getStringArray(R.array.locationsValues);
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
 
         switch (i) {
-
+            case 0:
+                chosen = currentLocation;
+                break;
             case 1:
                 chosen = locationValuesList[1];
                 break;

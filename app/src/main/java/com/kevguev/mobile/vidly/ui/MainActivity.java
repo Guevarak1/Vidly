@@ -114,7 +114,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 //        tabLayout.setupWithViewPager(viewPager);
 
         Intent i = getIntent();
-        if(i != null){
+        if (i != null) {
             currentLocation = i.getStringExtra(EXTRA_CURRENT_LOCATION);
         }
     }
@@ -128,19 +128,14 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
     @Override
     protected void onStart() {
-        //TODO: start first call here
-        //if current location not set, make a call to get current location
-        //  call youtube ws inside here with current location
-        //else call yt location with last saved pref
 
-        if(currentLocation != null){
+        if (currentLocation != null) {
             getResultsFromApi(currentLocation);
-        }
-        else {
+        } else {
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-            String prefLocation = prefs.getString("pref_location", null);
+            String prefLocation = prefs.getString(getString(R.string.pref_location), null);
             if (prefLocation != null) {
-                getResultsFromApi(prefLocation);
+                getResultsFromApi();
             }
         }
         super.onStart();
@@ -161,12 +156,12 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     protected void onActivityResult(
             int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        switch(requestCode) {
+        switch (requestCode) {
             case REQUEST_GOOGLE_PLAY_SERVICES:
                 if (resultCode != RESULT_OK) {
                     Toast.makeText(this,
                             "This app requires Google Play Services. Please install " +
-                                    "Google Play Services on your device and relaunch this app.",Toast.LENGTH_SHORT).show();
+                                    "Google Play Services on your device and relaunch this app.", Toast.LENGTH_SHORT).show();
                 } else {
                     //getResultsFromApi();
                 }
@@ -201,10 +196,11 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         mFab.setEnabled(true);
     }
 
+    //TODO: dialog keeps initializing to ny
     private void createDialog() {
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        String prefLocation = prefs.getString("pref_location", "defaultValue");
+        String prefLocation = prefs.getString(getString(R.string.pref_location), "defaultValue");
         int prefLocationInt = AppUtils.locationToDialogInt(prefLocation);
 
         new MaterialDialog.Builder(this)
@@ -214,13 +210,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
                     @Override
                     public boolean onSelection(MaterialDialog dialog, View view, int which, CharSequence text) {
-
-                        if (which == 0) {
-                            getResultsFromApi(currentLocation);
-                        } else {
-                            getResultsFromApi(AppUtils.toLatLng(which, getApplicationContext()));
-                        }
-
+                        getResultsFromApi(AppUtils.toLatLng(which, currentLocation, getApplicationContext()));
                         return true;
                     }
                 })
@@ -228,26 +218,30 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 .show();
     }
 
-    private void getResultsFromApi(String locationChosen) {
+
+    private void getResultsFromApi() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        String prefLocation = prefs.getString(getString(R.string.pref_location), "defaultValue");
+        getResultsFromApi(prefLocation);
+    }
+
+    private void getResultsFromApi(String locationPicked) {
 
         if (!isGooglePlayServicesAvailable()) {
             acquireGooglePlayServices();
-        }  else if (mCredential.getSelectedAccountName() == null) {
+        } else if (mCredential.getSelectedAccountName() == null) {
             chooseAccount();
         } else if (!AppUtils.isDeviceOnline(this)) {
             Toast.makeText(this, "No network connection available.", Toast.LENGTH_SHORT);
-        }
+        } else {
 
-    //        String accountName = getPreferences(Context.MODE_PRIVATE)
-    //                .getString(PREF_ACCOUNT_NAME, null);
-       else {
-            //mCredential.setSelectedAccountName(accountName);
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+            //String prefLocation = prefs.getString(getString(R.string.pref_location), "defaultValue");
             String publishedAfter = prefs.getString(getString(R.string.pref_published_after), "day"); // published after 1 day
             String radius = prefs.getString(getString(R.string.pref_radius), "1km");
 
             mProgress.show(); // on pre
-            MakeRequestTask request = new MakeRequestTask(publishedAfter, locationChosen, radius, this);
+            MakeRequestTask request = new MakeRequestTask(publishedAfter, locationPicked, radius, this);
             request.delegate = this;
             request.execute();
         }
@@ -300,7 +294,12 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             if (accountName != null) {
                 mCredential.setSelectedAccountName(accountName);
                 ((App) getApplicationContext()).setmCredential(mCredential);
-                //getResultsFromApi(toLatLng(0));
+
+                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putString("pref_location", currentLocation);
+
+                getResultsFromApi(currentLocation);
             } else {
                 // Start a dialog from which the user can choose an account
                 startActivityForResult(
@@ -316,6 +315,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                     Manifest.permission.GET_ACCOUNTS);
         }
     }
+
     @Override
     public void onPermissionsGranted(int requestCode, List<String> perms) {
 
@@ -409,9 +409,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             switch (position) {
                 case 0:
                     fragment = new MainListFragment();
-                    bundle = new Bundle();
-                    bundle.putString(EXTRA_LOCATION, location);
-                    fragment.setArguments(bundle);
                     break;
                 case 1:
                     fragment = new MapLocationsFragment();
