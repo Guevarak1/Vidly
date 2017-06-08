@@ -12,6 +12,8 @@ import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.preference.Preference;
+import android.support.v7.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
@@ -224,7 +226,7 @@ public class SplashActivity extends AppCompatActivity implements EasyPermissions
             super.onPostExecute(location);
 
             String locationString = currentLocation.getLatitude() + ", " + currentLocation.getLongitude();
-            SharedPreferences sharedPreferences = activity.getPreferences(Context.MODE_PRIVATE);
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(activity);
             SharedPreferences.Editor editor = sharedPreferences.edit();
             editor.putString(getString(R.string.pref_location),locationString);
             editor.commit();

@@ -129,13 +129,14 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     @Override
     protected void onStart() {
 
-        if (currentLocation != null) {
-            getResultsFromApi(currentLocation);
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        String prefLocation = prefs.getString(getString(R.string.pref_location), null);
+
+        if (prefLocation != null) {
+            getResultsFromApi();
         } else {
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-            String prefLocation = prefs.getString(getString(R.string.pref_location), null);
             if (prefLocation != null) {
-                getResultsFromApi();
+                getResultsFromApi(currentLocation);
             }
         }
         super.onStart();
