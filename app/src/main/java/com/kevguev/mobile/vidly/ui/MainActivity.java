@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
 
         viewPager = (ViewPager) findViewById(R.id.viewpager);
         mFab = (FloatingActionButton) findViewById(R.id.fab);
@@ -107,11 +107,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
         tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(viewPager);
-        //Big Refactor!! get location async. this onPost
-//        setupViewPager(viewPager);
-//
-//        tabLayout = (TabLayout) findViewById(R.id.tabs);
-//        tabLayout.setupWithViewPager(viewPager);
 
         Intent i = getIntent();
         if (i != null) {
