@@ -127,10 +127,10 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         String prefLocation = prefs.getString(getString(R.string.pref_location), null);
 
-        if (prefLocation != null) {
+        if (prefLocation != null && !prefLocation.equals("0,0")) {
             getResultsFromApi();
         } else {
-            if (prefLocation != null) {
+            if (currentLocation != null) {
                 getResultsFromApi(currentLocation);
             }
         }
