@@ -104,7 +104,8 @@ public class SearchData {
         //create ListItem with dummy data and then add it to our list
         for (Video video: videos) {
             ListItem item = new ListItem();
-            item.setImageResId(icon);
+            item.setImgUrl(video.getSnippet().getThumbnails().getMedium().getUrl());
+            //item.setImageResId(icon);
             item.setTitle(video.getSnippet().getTitle());
             item.setSubtitle(video.getSnippet().getDescription());
             data.add(item);

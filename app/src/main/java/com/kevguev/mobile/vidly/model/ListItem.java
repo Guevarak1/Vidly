@@ -7,10 +7,19 @@ package com.kevguev.mobile.vidly.model;
 
 public class ListItem {
     private String title;
+    private String imgUrl;
     private String subtitle;
     private boolean favorite = false;
     private int imageResId;
     private int isTurned;
+
+    public String getImgUrl() {
+        return imgUrl;
+    }
+
+    public void setImgUrl(String imgUrl) {
+        this.imgUrl = imgUrl;
+    }
 
     public int getIsTurned() {
         return isTurned;

@@ -11,6 +11,7 @@ import android.widget.TextView;
 
 import com.kevguev.mobile.vidly.R;
 import com.kevguev.mobile.vidly.model.ListItem;
+import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +24,7 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchHold
 
     private List<ListItem> listData;
     private LayoutInflater inflater;
+    private Context context;
 
     //communication channel via activity
     private ItemClickCallback itemClickCallback;
@@ -40,6 +42,7 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchHold
     }
 
     public SearchAdapter(Context context) {
+        this.context = context;
         this.inflater = LayoutInflater.from(context);
         this.listData = new ArrayList<ListItem>();
     }
@@ -61,8 +64,9 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchHold
 
         ListItem item = listData.get(position);
         holder.title.setText(item.getTitle());
-        holder.thumbnail.setImageResource(item.getImageResId());
-        holder.thumbnail.setTag(item.getImageResId());
+        Picasso.with(context).load(item.getImgUrl()).fit().into(holder.thumbnail);
+        //holder.thumbnail.setImageResource(item.getImageResId());
+        //holder.thumbnail.setTag(item.getImageResId());
         //holder.likeImageView.setTag(R.drawable.ic_star_border_black_24dp);
         if (item.isFavorite()) {
             holder.likeImageView.setImageResource(R.drawable.ic_star_black_24dp);
