@@ -96,16 +96,11 @@ public class SplashActivity extends AppCompatActivity implements EasyPermissions
     @Override
     protected void onResume() {
         super.onResume();
-        //mGoogleApiClient.connect();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-//        if (mGoogleApiClient.isConnected()) {
-//            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
-//            mGoogleApiClient.disconnect();
-//        }
     }
 
     @Override
@@ -137,10 +132,8 @@ public class SplashActivity extends AppCompatActivity implements EasyPermissions
         String[] perms = {Manifest.permission.ACCESS_COARSE_LOCATION};
         if (EasyPermissions.hasPermissions(
                 this, perms)) {
-            //mGoogleApiClient.connect();
+
             new BackgroundWork(this).execute();
-
-
         } else {
             EasyPermissions.requestPermissions(
                     this,
@@ -153,7 +146,6 @@ public class SplashActivity extends AppCompatActivity implements EasyPermissions
     @Override
     public void onConnectionSuspended(int i) {
         mGoogleApiClient.connect();
-
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.kevguev.mobile.vidly.adapter;
 
 import android.content.Context;
+import android.media.Image;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,7 +19,7 @@ import java.util.List;
  * Created by Kevin Guevara on 5/13/2017.
  */
 
-public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchHolder>  {
+public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchHolder> {
 
     private List<ListItem> listData;
     private LayoutInflater inflater;
@@ -26,16 +27,19 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchHold
     //communication channel via activity
     private ItemClickCallback itemClickCallback;
 
-    public interface  ItemClickCallback{
-        void onItemClick(int p);
-        void onSecondaryIconClick(int p);
+    public interface ItemClickCallback {
+        void onThumbnailClicked(int p);
+
+        void onLikeImageClicked(View v, int p);
+
+        void onShareImageClicked(int p);
     }
 
-    public void setItemClickCallback(final ItemClickCallback itemClickCallback){
+    public void setItemClickCallback(final ItemClickCallback itemClickCallback) {
         this.itemClickCallback = itemClickCallback;
     }
 
-    public SearchAdapter(Context context){
+    public SearchAdapter(Context context) {
         this.inflater = LayoutInflater.from(context);
         this.listData = new ArrayList<ListItem>();
     }
@@ -47,7 +51,7 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchHold
 
     @Override
     public SearchHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View view = inflater.inflate(R.layout.list_item, parent, false);
+        View view = inflater.inflate(R.layout.cardview_items, parent, false);
 
         return new SearchHolder(view);
     }
@@ -57,15 +61,17 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchHold
 
         ListItem item = listData.get(position);
         holder.title.setText(item.getTitle());
-        holder.subTitle.setText(item.getSubtitle());
+        holder.thumbnail.setImageResource(item.getImageResId());
+        holder.thumbnail.setTag(item.getImageResId());
+        //holder.likeImageView.setTag(R.drawable.ic_star_border_black_24dp);
         if (item.isFavorite()) {
-            holder.secondaryIcon.setImageResource(R.drawable.ic_star_black_24dp);
+            holder.likeImageView.setImageResource(R.drawable.ic_star_black_24dp);
         } else {
-            holder.secondaryIcon.setImageResource(R.drawable.ic_star_border_black_24dp);
+            holder.likeImageView.setImageResource(R.drawable.ic_star_border_black_24dp);
         }
     }
 
-    public void setListData(ArrayList<ListItem> exerciseList){
+    public void setListData(ArrayList<ListItem> exerciseList) {
         this.listData.clear();
         this.listData.addAll(exerciseList);
     }
@@ -77,33 +83,36 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchHold
 
     //needs a viewholder
     //assign data to appropriate place in recycler view
-    class SearchHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+    public class SearchHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
         private TextView title;
-        private TextView subTitle;
+        //private TextView subTitle;
         private ImageView thumbnail;
-        private ImageView secondaryIcon;
-        private View container;
+        private ImageView likeImageView;
+        private ImageView shareImageView;
+        //private View container;
 
         public SearchHolder(View itemView) {
             super(itemView);
 
-            title = (TextView) itemView.findViewById(R.id.lbl_item_text);
-            subTitle = (TextView) itemView.findViewById(R.id.lbl_item_sub_title);
-            thumbnail = (ImageView) itemView.findViewById(R.id.im_item_icon);
-            secondaryIcon = (ImageView) itemView.findViewById(R.id.im_item_icon_secondary);
-            secondaryIcon.setOnClickListener(this);
-            container = itemView.findViewById(R.id.cont_item_root);
-            container.setOnClickListener(this);
+            title = (TextView) itemView.findViewById(R.id.titleTextView);
+            //subTitle = (TextView) itemView.findViewById(R.id.lbl_item_sub_title);
+            thumbnail = (ImageView) itemView.findViewById(R.id.coverImageView);
+            thumbnail.setOnClickListener(this);
+            likeImageView = (ImageView) itemView.findViewById(R.id.likeImageView);
+            likeImageView.setOnClickListener(this);
+            shareImageView = (ImageView) itemView.findViewById(R.id.shareImageView);
+            shareImageView.setOnClickListener(this);
         }
 
         @Override
         public void onClick(View view) {
-            if (view.getId() == R.id.cont_item_root) {
-                itemClickCallback.onItemClick(getAdapterPosition());
-            } else {
-                itemClickCallback.onSecondaryIconClick(getAdapterPosition());
-
+            if (view.getId() == R.id.likeImageView) {
+                itemClickCallback.onLikeImageClicked(likeImageView, getAdapterPosition());
+            } else if (view.getId() == R.id.shareImageView) {
+                itemClickCallback.onShareImageClicked(getAdapterPosition());
+            } else if (view.getId() == R.id.coverImageView) {
+                itemClickCallback.onThumbnailClicked(getAdapterPosition());
             }
         }
     }

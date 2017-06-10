@@ -10,6 +10,15 @@ public class ListItem {
     private String subtitle;
     private boolean favorite = false;
     private int imageResId;
+    private int isTurned;
+
+    public int getIsTurned() {
+        return isTurned;
+    }
+
+    public void setIsTurned(int isTurned) {
+        this.isTurned = isTurned;
+    }
 
     public String getSubtitle() {
         return subtitle;
