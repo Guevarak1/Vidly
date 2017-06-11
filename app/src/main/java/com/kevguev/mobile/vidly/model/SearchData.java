@@ -108,6 +108,7 @@ public class SearchData {
             //item.setImageResId(icon);
             item.setTitle(video.getSnippet().getTitle());
             item.setSubtitle(video.getSnippet().getDescription());
+            item.setVideoUrlId(video.getId());
             data.add(item);
         }
 

@@ -8,10 +8,20 @@ package com.kevguev.mobile.vidly.model;
 public class ListItem {
     private String title;
     private String imgUrl;
+    private String videoUrlId;
     private String subtitle;
     private boolean favorite = false;
     private int imageResId;
     private int isTurned;
+
+
+    public String getVideoUrlId() {
+        return videoUrlId;
+    }
+
+    public void setVideoUrlId(String videoUrlId) {
+        this.videoUrlId = videoUrlId;
+    }
 
     public String getImgUrl() {
         return imgUrl;

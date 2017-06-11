@@ -9,7 +9,6 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.kevguev.mobile.vidly.Constants;
@@ -105,11 +104,14 @@ public class MainListFragment extends Fragment implements SearchAdapter.ItemClic
     @Override
     public void onShareImageClicked(int p) {
         ListItem item = (ListItem) listData.get(p);
+        String videoUrlId = item.getVideoUrlId();
+
+        Intent sendIntent = new Intent();
+        sendIntent.setAction(Intent.ACTION_SEND);
+        sendIntent.putExtra(Intent.EXTRA_TEXT, "Sharing from Local Vids\n\n" + "https://www.youtube.com/watch?v=" + videoUrlId);
+        sendIntent.setType("text/plain");
+        startActivity(sendIntent);
 
         Toast.makeText(getActivity(),item.getTitle()+" sharing!",Toast.LENGTH_SHORT).show();
-
-        // pass new data to adapter and update
-//        adapter.setListData(listData);
-//        adapter.notifyDataSetChanged();
     }
 }

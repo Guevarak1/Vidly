@@ -65,9 +65,6 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchHold
         ListItem item = listData.get(position);
         holder.title.setText(item.getTitle());
         Picasso.with(context).load(item.getImgUrl()).fit().into(holder.thumbnail);
-        //holder.thumbnail.setImageResource(item.getImageResId());
-        //holder.thumbnail.setTag(item.getImageResId());
-        //holder.likeImageView.setTag(R.drawable.ic_star_border_black_24dp);
         if (item.isFavorite()) {
             holder.likeImageView.setImageResource(R.drawable.ic_star_black_24dp);
         } else {
