@@ -6,6 +6,8 @@
         <item>New York</item>
         <item>San Francisco</item>
         <item>Washington D.C</item>
+        <item>Atlanta</item>
+        <item>Chicago</item>
     </string-array>
 
     <string-array name="locationsValues">
@@ -13,6 +15,8 @@
         <item>40.7417544,-74.0086348</item>
         <item>37.7577627,-122.4726194</item>
         <item>38.8994613,-77.0846063</item>
+        <item>33.757053,-84.410121</item>
+        <item>41.8333925,-88.0123393</item>
     </string-array>
 
     <string-array name="radius">

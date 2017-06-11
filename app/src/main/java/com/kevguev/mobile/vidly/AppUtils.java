@@ -30,6 +30,12 @@ public class AppUtils {
             case "38.8994613,-77.0846063":
                 chosen = 3;
                 break;
+            case "33.757053,-84.410121":
+                chosen = 4;
+                break;
+            case "41.8333925,-88.0123393":
+                chosen = 5;
+                break;
             default:
                 chosen = 0;
                 break;
@@ -57,6 +63,11 @@ public class AppUtils {
             case 3:
                 chosen = locationValuesList[3];
                 break;
+            case 4:
+                chosen = locationValuesList[4];
+                break;
+            case 5:
+                chosen = locationValuesList[5];
             default:
                 break;
 
