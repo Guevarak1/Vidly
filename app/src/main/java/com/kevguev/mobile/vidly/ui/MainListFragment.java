@@ -79,12 +79,7 @@ public class MainListFragment extends Fragment implements SearchAdapter.ItemClic
     public void onThumbnailClicked(int p) {
         ListItem item = (ListItem) listData.get(p);
         Intent i = new Intent(getActivity(), DetailActivity.class);
-        Bundle extras = new Bundle();
-
-        extras.putString(Constants.EXTRA_QUOTE, item.getTitle());
-        extras.putString(Constants.EXTRA_ATTR, item.getSubtitle());
-
-        i.putExtra(Constants.BUNDLE_EXTRAS, extras);
+        i.putExtra(Constants.BUNDLE_EXTRAS, item);
         startActivity(i);
 
     }

@@ -2,6 +2,7 @@ package com.kevguev.mobile.vidly.ui;
 
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -31,7 +32,9 @@ import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecovera
 import com.google.api.services.youtube.model.GeoPoint;
 import com.google.api.services.youtube.model.Video;
 import com.kevguev.mobile.vidly.App;
+import com.kevguev.mobile.vidly.Constants;
 import com.kevguev.mobile.vidly.R;
+import com.kevguev.mobile.vidly.model.ListItem;
 import com.kevguev.mobile.vidly.model.SearchData;
 
 import java.io.IOException;
@@ -160,12 +163,32 @@ public class MapLocationsFragment extends Fragment {
             for (Video video : output) {
                 GeoPoint locationDetails = video.getRecordingDetails().getLocation();
                 LatLng coord = new LatLng(locationDetails.getLatitude(), locationDetails.getLongitude());
+
+                String title = video.getSnippet().getTitle();
+                String subtitle = video.getSnippet().getDescription();
+                String videoUrl = video.getId();
+                String imgUrl = video.getSnippet().getThumbnails().getMedium().getUrl();
+                ListItem item = new ListItem(title, imgUrl, videoUrl,subtitle );
+
                 googleMap.addMarker(new
                         MarkerOptions()
                         .position(coord)
-                        .title(video.getSnippet().getTitle())
+                        .title(title)
                         .icon(BitmapDescriptorFactory
-                                .defaultMarker(BitmapDescriptorFactory.HUE_CYAN)));
+                                .defaultMarker(BitmapDescriptorFactory.HUE_CYAN)))
+                .setTag(item);
+
+                googleMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+                    @Override
+                    public boolean onMarkerClick(Marker marker) {
+
+                        ListItem item = (ListItem)marker.getTag();
+                        Intent i = new Intent(getActivity(), DetailActivity.class);
+                        i.putExtra(Constants.BUNDLE_EXTRAS, item);
+                        startActivity(i);
+                        return false;
+                    }
+                });
             }
         }
     }

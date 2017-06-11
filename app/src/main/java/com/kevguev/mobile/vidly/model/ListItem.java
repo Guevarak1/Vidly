@@ -1,19 +1,42 @@
 package com.kevguev.mobile.vidly.model;
 
+import android.os.Parcel;
+import android.os.Parcelable;
 /**
  * Java Representation of our data to be displayed in our recycler view
  * Created by Kevin Guevara on 5/13/2017.
  */
 
-public class ListItem {
+public class ListItem implements Parcelable {
     private String title;
     private String imgUrl;
     private String videoUrlId;
     private String subtitle;
     private boolean favorite = false;
     private int imageResId;
-    private int isTurned;
 
+    public static final Creator<ListItem> CREATOR = new Creator<ListItem>() {
+        @Override
+        public ListItem createFromParcel(Parcel in) {
+            return new ListItem(in);
+        }
+
+        @Override
+        public ListItem[] newArray(int size) {
+            return new ListItem[size];
+        }
+    };
+
+    public ListItem() {
+
+    }
+
+    public ListItem(String title, String imgUrl, String videoUrlId, String subtitle ){
+        this.title = title;
+        this.subtitle = subtitle;
+        this.videoUrlId = videoUrlId;
+        this.imgUrl = imgUrl;
+    }
 
     public String getVideoUrlId() {
         return videoUrlId;
@@ -29,14 +52,6 @@ public class ListItem {
 
     public void setImgUrl(String imgUrl) {
         this.imgUrl = imgUrl;
-    }
-
-    public int getIsTurned() {
-        return isTurned;
-    }
-
-    public void setIsTurned(int isTurned) {
-        this.isTurned = isTurned;
     }
 
     public String getSubtitle() {
@@ -69,5 +84,28 @@ public class ListItem {
 
     public void setImageResId(int imageResId) {
         this.imageResId = imageResId;
+    }
+
+    // Parcelling part
+    public ListItem(Parcel in) {
+        String[] data = new String[4];
+
+        in.readStringArray(data);
+        // the order needs to be the same as in writeToParcel() method
+        this.title = data[0];
+        this.subtitle = data[1];
+        this.videoUrlId = data[2];
+        this.imgUrl = data[3];
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel parcel, int i) {
+        parcel.writeStringArray(new String[]{this.title,
+                this.subtitle, this.videoUrlId, this.imgUrl});
     }
 }
