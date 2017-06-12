@@ -112,17 +112,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         if (i != null) {
             currentLocation = i.getStringExtra(EXTRA_CURRENT_LOCATION);
         }
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        App app = ((App) getApplicationContext());
-        app.setmCredential(null);
-    }
-
-    @Override
-    protected void onStart() {
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         String prefLocation = prefs.getString(getString(R.string.pref_location), null);
@@ -134,7 +123,13 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 getResultsFromApi(currentLocation);
             }
         }
-        super.onStart();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        App app = ((App) getApplicationContext());
+        app.setmCredential(null);
     }
 
     /**

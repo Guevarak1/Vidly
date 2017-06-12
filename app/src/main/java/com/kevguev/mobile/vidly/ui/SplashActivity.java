@@ -226,6 +226,7 @@ public class SplashActivity extends AppCompatActivity implements EasyPermissions
             Intent i = new Intent(activity, MainActivity.class);
             i.putExtra(EXTRA_CURRENT_LOCATION ,locationString);
             startActivity(i);
+            finish();
         }
     }
 }
