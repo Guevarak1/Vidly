@@ -38,9 +38,9 @@
     </string-array>
 
     <string-array name="publishedValues">
-        <item>day</item>
-        <item>week</item>
-        <item>month</item>
+        <item>1</item>
+        <item>7</item>
+        <item>30</item>
     </string-array>
 
 

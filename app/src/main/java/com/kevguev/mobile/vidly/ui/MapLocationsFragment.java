@@ -36,6 +36,7 @@ import com.kevguev.mobile.vidly.Constants;
 import com.kevguev.mobile.vidly.R;
 import com.kevguev.mobile.vidly.model.ListItem;
 import com.kevguev.mobile.vidly.model.SearchData;
+import com.kevguev.mobile.vidly.model.jsonpojo.videos.Item;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -150,7 +151,7 @@ public class MapLocationsFragment extends Fragment {
         return new LatLng(lat, lng);
     }
 
-    public void updateGoogleMap(List<Video> output) {
+    public void updateGoogleMap(List<Item> videos) {
         LatLng currentLocation = parseLocationString(lastLocation);
         googleMap.addMarker(new MarkerOptions().position(currentLocation).title("Chosen Location"));
 
@@ -160,9 +161,10 @@ public class MapLocationsFragment extends Fragment {
 
         if (googleMap != null) {
             googleMap.clear();
-            for (Video video : output) {
-                GeoPoint locationDetails = video.getRecordingDetails().getLocation();
-                LatLng coord = new LatLng(locationDetails.getLatitude(), locationDetails.getLongitude());
+            for (Item video : videos) {
+                Double latitude = video.getRecordingDetails().getLocation().getLatitude();
+                Double longitude = video.getRecordingDetails().getLocation().getLongitude();
+                LatLng coord = new LatLng(latitude, longitude);
 
                 String title = video.getSnippet().getTitle();
                 String subtitle = video.getSnippet().getDescription();
