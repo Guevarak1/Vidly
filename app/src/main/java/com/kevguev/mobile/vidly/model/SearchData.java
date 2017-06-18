@@ -14,12 +14,15 @@ import com.google.api.services.youtube.model.SearchResult;
 import com.google.api.services.youtube.model.Video;
 import com.google.api.services.youtube.model.VideoListResponse;
 import com.kevguev.mobile.vidly.R;
+import com.kevguev.mobile.vidly.model.jsonpojo.videos.Item;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+
+import static com.kevguev.mobile.vidly.Constants.NUMBER_OF_VIDEOS_RETURNED;
 
 /**
  * Created by Kevin Guevara on 5/13/2017.
@@ -29,7 +32,6 @@ public class SearchData {
 
     private static final int icon = R.drawable.ic_local_play_black_36dp;
     private com.google.api.services.youtube.YouTube mService = null;
-    private static final long NUMBER_OF_VIDEOS_RETURNED = 25;
 
 
     public SearchData(GoogleAccountCredential credential) {
@@ -59,7 +61,7 @@ public class SearchData {
             // As a best practice, only retrieve the fields that the
             // application uses.
             search.setFields("items(id/videoId)");
-            search.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
+            //search.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
 
             // Call the API and print results.
             SearchListResponse searchResponse = search.execute();
@@ -97,12 +99,12 @@ public class SearchData {
         return null;
     }
 
-    public List<ListItem> getListData(List<Video> videos) {
+    public List<ListItem> getListData(List<Item> videos) {
 
         List<ListItem> data = new ArrayList<>();
 
         //create ListItem with dummy data and then add it to our list
-        for (Video video: videos) {
+        for (Item video: videos) {
             ListItem item = new ListItem();
             item.setImgUrl(video.getSnippet().getThumbnails().getMedium().getUrl());
             //item.setImageResId(icon);

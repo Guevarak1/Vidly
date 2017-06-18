@@ -46,7 +46,6 @@ public class SplashActivity extends AppCompatActivity implements EasyPermissions
     GoogleApiClient mGoogleApiClient;
     LocationRequest mLocationRequest;
     Location currentLocation;
-    ProgressBar splashProgressBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,11 +53,6 @@ public class SplashActivity extends AppCompatActivity implements EasyPermissions
         setContentView(R.layout.activity_splash);
         buildGoogleApiClient();
         createLocationRequest();
-        //setGoogleServices();
-
-        splashProgressBar = (ProgressBar) findViewById(R.id.splashProgressBar);
-        splashProgressBar.setVisibility(View.VISIBLE);
-
     }
 
     protected void buildGoogleApiClient() {

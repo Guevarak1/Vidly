@@ -6,7 +6,6 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
@@ -18,7 +17,6 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.util.SparseArray;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -29,36 +27,57 @@ import android.widget.Toast;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.gms.location.LocationServices;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
+import com.google.api.client.repackaged.com.google.common.base.Joiner;
 import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.youtube.YouTubeScopes;
-import com.google.api.services.youtube.model.Video;
 import com.kevguev.mobile.vidly.App;
 import com.kevguev.mobile.vidly.AppUtils;
 import com.kevguev.mobile.vidly.Constants;
 import com.kevguev.mobile.vidly.R;
-import com.kevguev.mobile.vidly.YoutubeResponseListener;
-import com.kevguev.mobile.vidly.model.MakeRequestTask;
 import com.kevguev.mobile.vidly.model.SearchData;
+import com.kevguev.mobile.vidly.model.jsonpojo.videoids.Items;
+import com.kevguev.mobile.vidly.model.jsonpojo.videos.Item;
+import com.kevguev.mobile.vidly.model.jsonpojo.videos.Videos;
+import com.kevguev.mobile.vidly.model.retrofit.SearchEndpointInterface;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.List;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 import static com.kevguev.mobile.vidly.Constants.EXTRA_CURRENT_LOCATION;
 import static com.kevguev.mobile.vidly.Constants.EXTRA_LOCATION;
+import static com.kevguev.mobile.vidly.Constants.FIELDS;
+import static com.kevguev.mobile.vidly.Constants.NUMBER_OF_VIDEOS_RETURNED;
 import static com.kevguev.mobile.vidly.Constants.PREF_ACCOUNT_NAME;
+import static com.kevguev.mobile.vidly.Constants.RECORDING_DETAILS_PART;
 import static com.kevguev.mobile.vidly.Constants.REQUEST_ACCOUNT_PICKER;
 import static com.kevguev.mobile.vidly.Constants.REQUEST_AUTHORIZATION;
 import static com.kevguev.mobile.vidly.Constants.REQUEST_GOOGLE_PLAY_SERVICES;
+import static com.kevguev.mobile.vidly.Constants.SETTINGS_RESULT;
+import static com.kevguev.mobile.vidly.Constants.SNIPPET_PART;
+import static com.kevguev.mobile.vidly.Constants.VIDEO;
 
 //find out whats being uploaded near you
-public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks,
-        YoutubeResponseListener {
+public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks{
+
+    public static final String BASE_URL = "https://www.googleapis.com/youtube/v3/";
+    public static final String API_KEY = "AIzaSyCm0Kx6byqy64NO1f5XDAOoRr7jD9EZCyM";
+    Retrofit retrofit = new Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build();
+    SearchEndpointInterface apiService = retrofit.create(SearchEndpointInterface.class);
 
     protected static final String TAG = MainActivity.class.getSimpleName();
 
@@ -71,7 +90,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     String currentLocation;
     GoogleAccountCredential mCredential;
     private static final String[] SCOPES = {YouTubeScopes.YOUTUBE_READONLY};
-
 
     /**
      * Create the main activity.
@@ -178,6 +196,12 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                     //getResultsFromApi();
                 }
                 break;
+            default:
+                if(resultCode == SETTINGS_RESULT){
+                    getResultsFromApi();
+                }
+                break;
+
         }
     }
 
@@ -187,7 +211,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         mFab.setEnabled(true);
     }
 
-    //TODO: dialog keeps initializing to ny
     private void createDialog() {
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -227,14 +250,11 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         } else {
 
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-            //String prefLocation = prefs.getString(getString(R.string.pref_location), "defaultValue");
-            String publishedAfter = prefs.getString(getString(R.string.pref_published_after), "day"); // published after 1 day
+            int publishedAfter = Integer.parseInt(prefs.getString(getString(R.string.pref_published_after), "1")); // published after 1 day
             String radius = prefs.getString(getString(R.string.pref_radius), "1km");
 
             mProgress.show(); // on pre
-            MakeRequestTask request = new MakeRequestTask(publishedAfter, locationPicked, radius, this);
-            request.delegate = this;
-            request.execute();
+            getVideos(locationPicked, radius, getPastDate(publishedAfter));
         }
     }
 
@@ -343,8 +363,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     }
 
     //feed the results into the other fragments
-    @Override
-    public void postResult(List<Video> videos) {
+    public void postResult(List<Item> videos) {
         if (videos == null || videos.size() == 0) {
             mProgress.hide();
             Toast.makeText(this, "No results returned.", Toast.LENGTH_SHORT).show();
@@ -451,11 +470,72 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             Intent myIntent = new Intent(MainActivity.this, SettingsActivity.class);
-            startActivity(myIntent);
+            startActivityForResult(myIntent, SETTINGS_RESULT);
             return true;
         }
 
         return super.onOptionsItemSelected(item);
     }
 
+    public void getVideos(String location, String locationRadius, String publishedAfter) {
+
+        Call<Items> itemsCall = apiService.getVideoIds(API_KEY,
+                SNIPPET_PART,
+                location,
+                locationRadius,
+                NUMBER_OF_VIDEOS_RETURNED,
+                publishedAfter,
+                VIDEO,
+                FIELDS);
+
+        itemsCall.enqueue(new Callback<Items>() {
+            @Override
+            public void onResponse(Call<Items> call, Response<Items> response) {
+                int statusCode = response.code();
+
+                Items items = response.body();
+                List<String> videoIds = new ArrayList<String>();
+
+                for (com.kevguev.mobile.vidly.model.jsonpojo.videoids.Item item : items.getItems()) {
+                    videoIds.add(item.getId().getVideoId());
+                }
+
+                Joiner stringJoiner = Joiner.on(',');
+                String id = stringJoiner.join(videoIds);
+
+                Call<Videos> videosCall = apiService.getVideos(API_KEY,
+                        RECORDING_DETAILS_PART,
+                        id);
+
+                videosCall.enqueue(new Callback<Videos>() {
+                    @Override
+                    public void onResponse(Call<Videos> call, Response<Videos> response) {
+                        int statusCode = response.code();
+                        Videos videos = response.body();
+                        List<Item> videoItems = videos.getItems();
+                        postResult(videoItems);
+                    }
+
+                    @Override
+                    public void onFailure(Call<Videos> call, Throwable t) {
+
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(Call<Items> call, Throwable t) {
+                t.printStackTrace();
+            }
+        });
+    }
+
+    private String getPastDate(int days) {
+        final Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DATE, - days);
+
+        return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
+                .format(cal.getTime());
+
+    }
 }

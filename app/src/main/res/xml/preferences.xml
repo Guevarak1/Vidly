@@ -20,15 +20,7 @@
             android:summary="How long ago it was posted"
             android:entries="@array/published"
             android:entryValues="@array/publishedValues"
-            android:defaultValue="day" />
-
-        <android.support.v7.preference.ListPreference
-            android:key="@string/pref_location"
-            android:title="Location Preference"
-            android:summary="Where we will be searching"
-            android:entries="@array/locations"
-            android:entryValues="@array/locationsValues"
-            android:defaultValue="0, 0" />
+            android:defaultValue="1" />
 
         <android.support.v7.preference.ListPreference
             android:key="@string/pref_radius"
