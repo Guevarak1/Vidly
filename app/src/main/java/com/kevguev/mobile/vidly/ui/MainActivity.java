@@ -10,18 +10,13 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.TabLayout;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.Toolbar;
-import android.util.SparseArray;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Toast;
 
 import com.afollestad.materialdialogs.MaterialDialog;
@@ -40,6 +35,7 @@ import com.kevguev.mobile.vidly.model.jsonpojo.videoids.Items;
 import com.kevguev.mobile.vidly.model.jsonpojo.videos.Item;
 import com.kevguev.mobile.vidly.model.jsonpojo.videos.Videos;
 import com.kevguev.mobile.vidly.model.retrofit.SearchEndpointInterface;
+import com.kevguev.mobile.vidly.ui.adapter.ViewPagerAdapter;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -56,7 +52,6 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 import static com.kevguev.mobile.vidly.Constants.EXTRA_CURRENT_LOCATION;
-import static com.kevguev.mobile.vidly.Constants.EXTRA_LOCATION;
 import static com.kevguev.mobile.vidly.Constants.FIELDS;
 import static com.kevguev.mobile.vidly.Constants.NUMBER_OF_VIDEOS_RETURNED;
 import static com.kevguev.mobile.vidly.Constants.PREF_ACCOUNT_NAME;
@@ -121,15 +116,15 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             }
         });
 
-        setupViewPager(viewPager);
-
-        tabLayout = (TabLayout) findViewById(R.id.tabs);
-        tabLayout.setupWithViewPager(viewPager);
-
         Intent i = getIntent();
         if (i != null) {
             currentLocation = i.getStringExtra(EXTRA_CURRENT_LOCATION);
         }
+
+        setupViewPager(viewPager, currentLocation);
+
+        tabLayout = (TabLayout) findViewById(R.id.tabs);
+        tabLayout.setupWithViewPager(viewPager);
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         String prefLocation = prefs.getString(getString(R.string.pref_location), null);
@@ -146,8 +141,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        App app = ((App) getApplicationContext());
-        app.setmCredential(null);
     }
 
     /**
@@ -304,7 +297,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                     .getString(PREF_ACCOUNT_NAME, null);
             if (accountName != null) {
                 mCredential.setSelectedAccountName(accountName);
-                ((App) getApplicationContext()).setmCredential(mCredential);
 
                 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
                 SharedPreferences.Editor editor = prefs.edit();
@@ -354,12 +346,13 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
     }
 
-    private void setupViewPager(ViewPager viewPager) {
-        adapter = new ViewPagerAdapter(getSupportFragmentManager());
+    public void setupViewPager(ViewPager viewPager, String currentLocation) {
+        adapter = new ViewPagerAdapter(this, getSupportFragmentManager(), currentLocation);
         adapter.addFragment(new MainListFragment(), "LIST");
         adapter.addFragment(new MapLocationsFragment(), "MAP");
         adapter.addFragment(new FavoritesFragment(), "FAV");
         viewPager.setAdapter(adapter);
+        viewPager.setOffscreenPageLimit(2);
     }
 
     //feed the results into the other fragments
@@ -372,7 +365,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             mProgress.hide();
             //populate list
             MainListFragment listFragment = (MainListFragment) adapter.getRegisteredFragment(0);
-            SearchData mSearchData = new SearchData(((App) getApplicationContext()).getmCredential());
+            SearchData mSearchData = new SearchData(mCredential);
             listFragment.listData = (ArrayList) mSearchData.getListData(videos);
             listFragment.adapter.setListData(listFragment.listData);
             listFragment.adapter.notifyDataSetChanged();
@@ -381,75 +374,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             MapLocationsFragment mapFragment = (MapLocationsFragment) adapter.getRegisteredFragment(1);
             mapFragment.lastLocation = videos.get(0).getRecordingDetails().getLocation().getLatitude() + ", " + videos.get(0).getRecordingDetails().getLocation().getLongitude();
             mapFragment.updateGoogleMap(videos);
-        }
-    }
-
-    private class ViewPagerAdapter extends FragmentPagerAdapter {
-
-        private final List<Fragment> mFragmentList = new ArrayList<>();
-        private final List<String> mFragmentTitleList = new ArrayList<>();
-        SparseArray<Fragment> registeredFragments = new SparseArray<>();
-
-        ViewPagerAdapter(FragmentManager manager) {
-            super(manager);
-        }
-
-        @Override
-        public Object instantiateItem(ViewGroup container, int position) {
-            Fragment fragment = (Fragment) super.instantiateItem(container, position);
-            registeredFragments.put(position, fragment);
-            return fragment;
-        }
-
-        @Override
-        public void destroyItem(ViewGroup container, int position, Object object) {
-            registeredFragments.remove(position);
-            super.destroyItem(container, position, object);
-        }
-
-        public Fragment getRegisteredFragment(int position) {
-            return registeredFragments.get(position);
-        }
-
-        @Override
-        public Fragment getItem(int position) {
-            String location = currentLocation;
-            Fragment fragment;
-            Bundle bundle;
-            switch (position) {
-                case 0:
-                    fragment = new MainListFragment();
-                    break;
-                case 1:
-                    fragment = new MapLocationsFragment();
-                    bundle = new Bundle();
-                    bundle.putString(EXTRA_LOCATION, location);
-                    fragment.setArguments(bundle);
-                    break;
-                case 2:
-                    fragment = new FavoritesFragment();
-                    break;
-                default:
-                    fragment = null;
-                    break;
-            }
-            return fragment;
-            //return mFragmentList.get(position);
-        }
-
-        @Override
-        public int getCount() {
-            return mFragmentList.size();
-        }
-
-        void addFragment(Fragment fragment, String title) {
-            mFragmentList.add(fragment);
-            mFragmentTitleList.add(title);
-        }
-
-        @Override
-        public CharSequence getPageTitle(int position) {
-            return mFragmentTitleList.get(position);
         }
     }
 
@@ -477,6 +401,8 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         return super.onOptionsItemSelected(item);
     }
 
+    //embedded web service call because we want to wait for
+    //location ids first then get the location ids data
     public void getVideos(String location, String locationRadius, String publishedAfter) {
 
         Call<Items> itemsCall = apiService.getVideoIds(API_KEY,

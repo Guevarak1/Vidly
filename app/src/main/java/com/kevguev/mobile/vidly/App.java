@@ -12,14 +12,5 @@ import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccoun
 
 public class App extends Application {
 
-    public GoogleAccountCredential getmCredential() {
-        return mCredential;
-    }
-
-    public void setmCredential(GoogleAccountCredential mCredential) {
-        this.mCredential = mCredential;
-    }
-
-    private GoogleAccountCredential mCredential;
 
 }
