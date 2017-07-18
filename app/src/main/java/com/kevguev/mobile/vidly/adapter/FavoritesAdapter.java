@@ -22,7 +22,7 @@ import io.realm.Realm;
  * Created by Kevin Guevara on 7/7/2017.
  */
 
-public class FavoritesAdapter extends RealmRecyclerViewAdapter<RealmVideo>{
+public class FavoritesAdapter extends RealmRecyclerViewAdapter<RealmVideo> {
 
     final Context context;
     private Realm realm;
@@ -34,7 +34,7 @@ public class FavoritesAdapter extends RealmRecyclerViewAdapter<RealmVideo>{
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.cardview_items, parent, false);
+        View view = LayoutInflater.from(context).inflate(R.layout.cardview_items, parent, false);
         return new CardViewHolder(view);
     }
 
@@ -47,24 +47,33 @@ public class FavoritesAdapter extends RealmRecyclerViewAdapter<RealmVideo>{
         //cast the generic view holder to our specific one
         final CardViewHolder holder = (CardViewHolder) viewHolder;
 
-        holder.textTitle.setText(video.getText());
+        holder.title.setText(video.getText());
 
-        if(video.getImageSrc() != null){
+        if (video.getImageSrc() != null) {
             Picasso.with(context)
                     .load(video.getImageSrc())
                     .fit()
-                    .into(holder.imageBackground);
+                    .into(holder.thumbnail);
         }
-        holder.card.setOnClickListener(new View.OnClickListener() {
+
+        holder.thumbnail.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (v.getId() == R.id.likeImageView) {
-                    Toast.makeText(context,"card  unliked", Toast.LENGTH_SHORT).show();
-                } else if (v.getId() == R.id.shareImageView) {
-                    Toast.makeText(context,"card  shared", Toast.LENGTH_SHORT).show();
-                } else if (v.getId() == R.id.coverImageView) {
-                    Toast.makeText(context,"card  clicked", Toast.LENGTH_SHORT).show();
-                }
+                Toast.makeText(context, "thumbnail clicked", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        holder.likeImageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(context, "like clicked", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        holder.shareImageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(context, "share clicked", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -79,17 +88,19 @@ public class FavoritesAdapter extends RealmRecyclerViewAdapter<RealmVideo>{
 
     public static class CardViewHolder extends RecyclerView.ViewHolder {
 
-        public CardView card;
-        public TextView textTitle;
-        public ImageView imageBackground;
+        private TextView title;
+        private ImageView thumbnail;
+        private ImageView likeImageView;
+        private ImageView shareImageView;
 
         public CardViewHolder(View itemView) {
             // standard view holder pattern with Butterknife view injection
             super(itemView);
 
-            card = (CardView) itemView.findViewById(R.id.card_view);
-            textTitle = (TextView) itemView.findViewById(R.id.titleTextView);
-            imageBackground = (ImageView) itemView.findViewById(R.id.coverImageView);
+            title = (TextView) itemView.findViewById(R.id.titleTextView);
+            thumbnail = (ImageView) itemView.findViewById(R.id.coverImageView);
+            likeImageView = (ImageView) itemView.findViewById(R.id.likeImageView);
+            shareImageView = (ImageView) itemView.findViewById(R.id.shareImageView);
         }
     }
 }

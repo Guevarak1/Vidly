@@ -87,11 +87,9 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchHold
     public class SearchHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
         private TextView title;
-        //private TextView subTitle;
         private ImageView thumbnail;
         private ImageView likeImageView;
         private ImageView shareImageView;
-        //private View container;
 
         public SearchHolder(View itemView) {
             super(itemView);
