@@ -27,12 +27,14 @@ import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GooglePlayServicesAvailabilityIOException;
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
 import com.google.api.services.youtube.model.GeoPoint;
 import com.google.api.services.youtube.model.Video;
 import com.kevguev.mobile.vidly.App;
 import com.kevguev.mobile.vidly.Constants;
+import com.kevguev.mobile.vidly.PostResultsListener;
 import com.kevguev.mobile.vidly.R;
 import com.kevguev.mobile.vidly.model.ListItem;
 import com.kevguev.mobile.vidly.model.SearchData;
@@ -50,7 +52,7 @@ import static com.kevguev.mobile.vidly.Constants.REQUEST_AUTHORIZATION;
  * Created by Kevin Guevara on 5/24/2017.
  */
 
-public class MapLocationsFragment extends Fragment {
+public class MapLocationsFragment extends Fragment implements PostResultsListener {
 
     MapView mMapView;
     private GoogleMap googleMap;
@@ -106,6 +108,10 @@ public class MapLocationsFragment extends Fragment {
 
             }
         });
+
+        MainActivity mainActivity = (MainActivity) getActivity();
+        mainActivity.setPostResultsListener(this);
+
         return rootView;
     }
 
@@ -170,7 +176,7 @@ public class MapLocationsFragment extends Fragment {
                 String subtitle = video.getSnippet().getDescription();
                 String videoUrl = video.getId();
                 String imgUrl = video.getSnippet().getThumbnails().getMedium().getUrl();
-                ListItem item = new ListItem(title, imgUrl, videoUrl,subtitle );
+                ListItem item = new ListItem(title, imgUrl, videoUrl, subtitle);
 
                 googleMap.addMarker(new
                         MarkerOptions()
@@ -178,13 +184,13 @@ public class MapLocationsFragment extends Fragment {
                         .title(title)
                         .icon(BitmapDescriptorFactory
                                 .defaultMarker(BitmapDescriptorFactory.HUE_CYAN)))
-                .setTag(item);
+                        .setTag(item);
 
                 googleMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
                     @Override
                     public boolean onMarkerClick(Marker marker) {
 
-                        ListItem item = (ListItem)marker.getTag();
+                        ListItem item = (ListItem) marker.getTag();
                         Intent i = new Intent(getActivity(), DetailActivity.class);
                         i.putExtra(Constants.BUNDLE_EXTRAS, item);
                         startActivity(i);
@@ -193,5 +199,18 @@ public class MapLocationsFragment extends Fragment {
                 });
             }
         }
+    }
+
+    public static Fragment newInstance() {
+        MapLocationsFragment fragment = new MapLocationsFragment();
+        return fragment;
+    }
+
+    @Override
+    public void postResultsToFragment(List<Item> videos, GoogleAccountCredential mCredential) {
+        //populate map !
+        lastLocation = videos.get(0).getRecordingDetails().getLocation().getLatitude() + ", " + videos.get(0).getRecordingDetails().getLocation().getLongitude();
+        updateGoogleMap(videos);
+
     }
 }

@@ -9,5 +9,8 @@
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="choose">choose</string>
+    <string name="map">Map</string>
+    <string name="view_list">List</string>
+    <string name="favorites">Favorites</string>
     <string name="google_api_key">AIzaSyCm0Kx6byqy64NO1f5XDAOoRr7jD9EZCyM</string>
 </resources>

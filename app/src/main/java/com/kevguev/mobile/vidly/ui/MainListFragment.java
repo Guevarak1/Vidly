@@ -11,25 +11,25 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.kevguev.mobile.vidly.Constants;
+import com.kevguev.mobile.vidly.PostResultsListener;
 import com.kevguev.mobile.vidly.R;
 import com.kevguev.mobile.vidly.adapter.SearchAdapter;
 import com.kevguev.mobile.vidly.model.ListItem;
+import com.kevguev.mobile.vidly.model.SearchData;
+import com.kevguev.mobile.vidly.model.jsonpojo.videos.Item;
 
 import java.util.ArrayList;
+import java.util.List;
 
 //our card fragment
-public class MainListFragment extends Fragment implements SearchAdapter.ItemClickCallback{
+public class MainListFragment extends Fragment implements SearchAdapter.ItemClickCallback, PostResultsListener {
 
     ProgressDialog mProgress;
     private RecyclerView recView;
     public SearchAdapter adapter;
     public ArrayList listData;
-
-    public MainListFragment() {
-        // Required empty public constructor
-    }
-
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -51,6 +51,9 @@ public class MainListFragment extends Fragment implements SearchAdapter.ItemClic
         adapter = new SearchAdapter(getActivity());
         adapter.setItemClickCallback(this);
         recView.setAdapter(adapter);
+
+        MainActivity mainActivity = (MainActivity) getActivity();
+        mainActivity.setPostResultsListener(this);
 
         return view;
     }
@@ -108,5 +111,23 @@ public class MainListFragment extends Fragment implements SearchAdapter.ItemClic
         startActivity(sendIntent);
 
         Toast.makeText(getActivity(),item.getTitle()+" sharing!",Toast.LENGTH_SHORT).show();
+    }
+
+    public static Fragment newInstance() {
+
+        MainListFragment fragment = new MainListFragment();
+        return fragment;
+    }
+
+    @Override
+    public void postResultsToFragment(List<Item> videos, GoogleAccountCredential mCredential) {
+
+            mProgress.hide();
+            //populate list
+            SearchData mSearchData = new SearchData(mCredential);
+            listData = (ArrayList) mSearchData.getListData(videos);
+            adapter.setListData(listData);
+            adapter.notifyDataSetChanged();
+
     }
 }

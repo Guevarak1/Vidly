@@ -109,4 +109,9 @@ public class FavoritesFragment extends Fragment {
 
         }
     }
+
+    public static Fragment newInstance() {
+        FavoritesFragment fragment = new FavoritesFragment();
+        return fragment;
+    }
 }
