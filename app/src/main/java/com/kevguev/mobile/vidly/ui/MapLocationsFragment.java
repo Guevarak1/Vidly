@@ -58,6 +58,7 @@ public class MapLocationsFragment extends Fragment implements PostResultsListene
     private GoogleMap googleMap;
     public String lastLocation;
     ProgressDialog mProgress;
+    private ArrayList<Item> videos;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -65,6 +66,7 @@ public class MapLocationsFragment extends Fragment implements PostResultsListene
         Bundle bundle = this.getArguments();
         if (bundle != null) {
             lastLocation = bundle.getString(EXTRA_LOCATION, "");
+            videos = bundle.getParcelableArrayList("video_items");
         }
 
     }
@@ -90,6 +92,9 @@ public class MapLocationsFragment extends Fragment implements PostResultsListene
             e.printStackTrace();
         }
 
+        final MainActivity mainActivity = (MainActivity) getActivity();
+        mainActivity.setPostResultsListener(this);
+
         mMapView.getMapAsync(new OnMapReadyCallback() {
             @Override
             public void onMapReady(GoogleMap mMap) {
@@ -103,14 +108,15 @@ public class MapLocationsFragment extends Fragment implements PostResultsListene
                 googleMap.addMarker(new MarkerOptions().position(currentLocation).title("Marker Title").snippet("Marker Description"));
 
                 // For zooming automatically to the location of the marker
-                CameraPosition cameraPosition = new CameraPosition.Builder().target(currentLocation).zoom(12).build();
-                googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
-
+//                CameraPosition cameraPosition = new CameraPosition.Builder().target(currentLocation).zoom(12).build();
+//                googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+                if(mainActivity.videoItems != null ){
+                    videos = mainActivity.videoItems;
+                    updateGoogleMap(videos);
+                }
             }
         });
 
-        MainActivity mainActivity = (MainActivity) getActivity();
-        mainActivity.setPostResultsListener(this);
 
         return rootView;
     }
@@ -157,9 +163,12 @@ public class MapLocationsFragment extends Fragment implements PostResultsListene
         return new LatLng(lat, lng);
     }
 
-    public void updateGoogleMap(List<Item> videos) {
-        LatLng currentLocation = parseLocationString(lastLocation);
-        googleMap.addMarker(new MarkerOptions().position(currentLocation).title("Chosen Location"));
+    public void updateGoogleMap(ArrayList<Item> videos) {
+        //googleMap.addMarker(new MarkerOptions().position(currentLocation).title("Chosen Location"));
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+        String prefLocation = prefs.getString(getString(R.string.pref_location), "defaultValue");
+        //LatLng currentLocation = parseLocationString(lastLocation);
+        LatLng currentLocation = parseLocationString(prefLocation);
 
         // For zooming automatically to the location of the marker
         CameraPosition cameraPosition = new CameraPosition.Builder().target(currentLocation).zoom(12).build();
@@ -207,7 +216,7 @@ public class MapLocationsFragment extends Fragment implements PostResultsListene
     }
 
     @Override
-    public void postResultsToFragment(List<Item> videos, GoogleAccountCredential mCredential) {
+    public void postResultsToFragment(ArrayList<Item> videos, GoogleAccountCredential mCredential) {
         //populate map !
         lastLocation = videos.get(0).getRecordingDetails().getLocation().getLatitude() + ", " + videos.get(0).getRecordingDetails().getLocation().getLongitude();
         updateGoogleMap(videos);

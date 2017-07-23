@@ -21,7 +21,6 @@ import com.kevguev.mobile.vidly.model.SearchData;
 import com.kevguev.mobile.vidly.model.jsonpojo.videos.Item;
 
 import java.util.ArrayList;
-import java.util.List;
 
 //our card fragment
 public class MainListFragment extends Fragment implements SearchAdapter.ItemClickCallback, PostResultsListener {
@@ -30,10 +29,15 @@ public class MainListFragment extends Fragment implements SearchAdapter.ItemClic
     private RecyclerView recView;
     public SearchAdapter adapter;
     public ArrayList listData;
+    public ArrayList<Item> videoItems;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Bundle bundle = this.getArguments();
+        if (bundle != null) {
+            listData = bundle.getParcelableArrayList("video_items");
+        }
 
     }
 
@@ -54,7 +58,15 @@ public class MainListFragment extends Fragment implements SearchAdapter.ItemClic
 
         MainActivity mainActivity = (MainActivity) getActivity();
         mainActivity.setPostResultsListener(this);
+        if(mainActivity.videoItems != null ){
+            videoItems = mainActivity.videoItems;
 
+            SearchData mSearchData = new SearchData();
+            listData = (ArrayList) mSearchData.getListData(videoItems);
+            adapter.setListData(listData);
+            adapter.notifyDataSetChanged();
+
+        }
         return view;
     }
 
@@ -120,11 +132,11 @@ public class MainListFragment extends Fragment implements SearchAdapter.ItemClic
     }
 
     @Override
-    public void postResultsToFragment(List<Item> videos, GoogleAccountCredential mCredential) {
+    public void postResultsToFragment(ArrayList<Item> videos, GoogleAccountCredential mCredential) {
 
             mProgress.hide();
             //populate list
-            SearchData mSearchData = new SearchData(mCredential);
+            SearchData mSearchData = new SearchData();
             listData = (ArrayList) mSearchData.getListData(videos);
             adapter.setListData(listData);
             adapter.notifyDataSetChanged();
