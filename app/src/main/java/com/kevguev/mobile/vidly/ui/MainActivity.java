@@ -8,8 +8,13 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.design.widget.BottomNavigationView;
+import android.support.design.widget.BottomNavigationView.OnNavigationItemSelectedListener;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.TabLayout;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.preference.PreferenceManager;
@@ -26,10 +31,14 @@ import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccoun
 import com.google.api.client.repackaged.com.google.common.base.Joiner;
 import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.youtube.YouTubeScopes;
-import com.kevguev.mobile.vidly.App;
 import com.kevguev.mobile.vidly.AppUtils;
+import com.kevguev.mobile.vidly.BottomNavigationViewBehavior;
 import com.kevguev.mobile.vidly.Constants;
+import com.kevguev.mobile.vidly.PostResultsListener;
 import com.kevguev.mobile.vidly.R;
+import com.kevguev.mobile.vidly.RichBottomNavigationView;
+import com.kevguev.mobile.vidly.ScrollAnimationFab;
+import com.kevguev.mobile.vidly.model.ListItem;
 import com.kevguev.mobile.vidly.model.SearchData;
 import com.kevguev.mobile.vidly.model.jsonpojo.videoids.Items;
 import com.kevguev.mobile.vidly.model.jsonpojo.videos.Item;
@@ -52,6 +61,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 import static com.kevguev.mobile.vidly.Constants.EXTRA_CURRENT_LOCATION;
+import static com.kevguev.mobile.vidly.Constants.EXTRA_LOCATION;
 import static com.kevguev.mobile.vidly.Constants.FIELDS;
 import static com.kevguev.mobile.vidly.Constants.NUMBER_OF_VIDEOS_RETURNED;
 import static com.kevguev.mobile.vidly.Constants.PREF_ACCOUNT_NAME;
@@ -77,14 +87,18 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     protected static final String TAG = MainActivity.class.getSimpleName();
 
     private Toolbar toolbar;
-    private TabLayout tabLayout;
-    private ViewPager viewPager;
+    private RichBottomNavigationView bottomNavigationView;
     ProgressDialog mProgress;
     FloatingActionButton mFab;
-    ViewPagerAdapter adapter;
     String currentLocation;
     GoogleAccountCredential mCredential;
     private static final String[] SCOPES = {YouTubeScopes.YOUTUBE_READONLY};
+    private PostResultsListener postResultsListener;
+    public ArrayList<Item> videoItems = new ArrayList<Item>();
+    private List<Fragment> fragments = new ArrayList<>(3);
+    private static final String TAG_FRAGMENT_MAIN_LIST= "tag_frag_main_list";
+    private static final String TAG_FRAGMENT_MAP= "tag_frag_map";
+    private static final String TAG_FRAGMENT_FAVORITES= "tag_frag_favorites";
 
     /**
      * Create the main activity.
@@ -107,7 +121,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
 
-        viewPager = (ViewPager) findViewById(R.id.viewpager);
         mFab = (FloatingActionButton) findViewById(R.id.fab);
         mFab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -116,21 +129,49 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             }
         });
 
+
         Intent i = getIntent();
         if (i != null) {
             currentLocation = i.getStringExtra(EXTRA_CURRENT_LOCATION);
         }
 
-        setupViewPager(viewPager, currentLocation);
+        bottomNavigationView = (RichBottomNavigationView) findViewById(R.id.navigation);
 
-        tabLayout = (TabLayout) findViewById(R.id.tabs);
-        tabLayout.setupWithViewPager(viewPager);
+        //// TODO: 7/20/2017
+        // fab communicates with list and map fragment. switches hold the video data between fragments
+        bottomNavigationView.setOnNavigationItemSelectedListener(new OnNavigationItemSelectedListener() {
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                switch (item.getItemId()) {
+                    case R.id.action_item1:
+                        switchFragment(0,TAG_FRAGMENT_MAIN_LIST);
+                        return true;
+                    case R.id.action_item2:
+                        switchFragment(1,TAG_FRAGMENT_MAP);
+                        return true;
+                    case R.id.action_item3:
+                        switchFragment(2,TAG_FRAGMENT_FAVORITES);
+                        return true;
+                }
+                return false;
+
+            }
+        });
+
+        CoordinatorLayout.LayoutParams layoutParamsBottonNav = (CoordinatorLayout.LayoutParams) bottomNavigationView.getLayoutParams();
+        layoutParamsBottonNav.setBehavior(new BottomNavigationViewBehavior());
+
+        CoordinatorLayout.LayoutParams layoutParamsfab= (CoordinatorLayout.LayoutParams) mFab.getLayoutParams();
+        layoutParamsfab.setBehavior(new ScrollAnimationFab());
+
+        buildFragmentsList();
+        switchFragment(0,TAG_FRAGMENT_MAIN_LIST);
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         String prefLocation = prefs.getString(getString(R.string.pref_location), null);
 
         if (prefLocation != null && !prefLocation.equals("0,0")) {
-            getResultsFromApi();
+            getResultsFromApi(prefLocation);
         } else {
             if (currentLocation != null) {
                 getResultsFromApi(currentLocation);
@@ -251,6 +292,41 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         }
     }
 
+    private void buildFragmentsList(){
+        fragments.add(buildMainListFragment());
+        fragments.add(buildMapFragment());
+        fragments.add(new FavoritesFragment());
+    }
+
+    private MainListFragment buildMainListFragment(){
+        Bundle bundle = new Bundle();
+        MainListFragment mainListFragment = new MainListFragment();
+        if(videoItems != null && videoItems.size() > 0){
+            bundle.putParcelableArrayList("video_items", videoItems);
+        }
+        mainListFragment.setArguments(bundle);
+        return mainListFragment;
+    }
+
+    private MapLocationsFragment buildMapFragment(){
+        Bundle bundle = new Bundle();
+        MapLocationsFragment mapLocationsFragment = new MapLocationsFragment();
+        bundle.putString(EXTRA_LOCATION, currentLocation);
+
+        if(videoItems != null && videoItems.size() > 0){
+            bundle.putParcelableArrayList("video_items", videoItems);
+        }
+        mapLocationsFragment.setArguments(bundle);
+
+        return mapLocationsFragment;
+    }
+
+    private void switchFragment(int pos, String tag){
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.frame_layout, fragments.get(pos), tag)
+                .commit();
+    }
     /**
      * Check that Google Play services APK is installed and up to date.
      *
@@ -297,12 +373,17 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                     .getString(PREF_ACCOUNT_NAME, null);
             if (accountName != null) {
                 mCredential.setSelectedAccountName(accountName);
-
                 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-                SharedPreferences.Editor editor = prefs.edit();
-                editor.putString("pref_location", currentLocation);
 
-                getResultsFromApi(currentLocation);
+                if(prefs.getString(getString(R.string.pref_location), null) != null){
+                    getResultsFromApi(prefs.getString(getString(R.string.pref_location),null));
+                }
+                else{
+                    SharedPreferences.Editor editor = prefs.edit();
+                    editor.putString("pref_location", currentLocation);
+                    getResultsFromApi(currentLocation);
+                }
+
             } else {
                 // Start a dialog from which the user can choose an account
                 startActivityForResult(
@@ -346,35 +427,8 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
     }
 
-    public void setupViewPager(ViewPager viewPager, String currentLocation) {
-        adapter = new ViewPagerAdapter(this, getSupportFragmentManager(), currentLocation);
-        adapter.addFragment(new MainListFragment(), "LIST");
-        adapter.addFragment(new MapLocationsFragment(), "MAP");
-        adapter.addFragment(new FavoritesFragment(), "FAV");
-        viewPager.setAdapter(adapter);
-        viewPager.setOffscreenPageLimit(2);
-    }
-
-    //feed the results into the other fragments
-    public void postResult(List<Item> videos) {
-        if (videos == null || videos.size() == 0) {
-            mProgress.hide();
-            Toast.makeText(this, "No results returned.", Toast.LENGTH_SHORT).show();
-        } else {
-
-            mProgress.hide();
-            //populate list
-            MainListFragment listFragment = (MainListFragment) adapter.getRegisteredFragment(0);
-            SearchData mSearchData = new SearchData(mCredential);
-            listFragment.listData = (ArrayList) mSearchData.getListData(videos);
-            listFragment.adapter.setListData(listFragment.listData);
-            listFragment.adapter.notifyDataSetChanged();
-
-            //populate map !
-            MapLocationsFragment mapFragment = (MapLocationsFragment) adapter.getRegisteredFragment(1);
-            mapFragment.lastLocation = videos.get(0).getRecordingDetails().getLocation().getLatitude() + ", " + videos.get(0).getRecordingDetails().getLocation().getLongitude();
-            mapFragment.updateGoogleMap(videos);
-        }
+    public void setPostResultsListener(PostResultsListener l){
+        postResultsListener = l;
     }
 
     @Override
@@ -438,8 +492,16 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                     public void onResponse(Call<Videos> call, Response<Videos> response) {
                         int statusCode = response.code();
                         Videos videos = response.body();
-                        List<Item> videoItems = videos.getItems();
-                        postResult(videoItems);
+                        if (videos == null || videos.getItems().size() == 0) {
+                            mProgress.hide();
+                            Toast.makeText(getBaseContext(), "No results returned.", Toast.LENGTH_SHORT).show();
+                        }
+                        else{
+                            //save location to preferences
+                            videoItems = videos.getItems();
+                            postResultsListener.postResultsToFragment(videoItems, mCredential);
+                            mProgress.hide();
+                        }
                     }
 
                     @Override

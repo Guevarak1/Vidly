@@ -33,7 +33,7 @@ public class SearchData {
     private static final int icon = R.drawable.ic_local_play_black_36dp;
     private com.google.api.services.youtube.YouTube mService = null;
 
-
+    public SearchData(){}
     public SearchData(GoogleAccountCredential credential) {
         HttpTransport transport = AndroidHttp.newCompatibleTransport();
         JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
@@ -43,61 +43,61 @@ public class SearchData {
                 .build();
     }
 
-    public List<Video> getDataFromApi(String publishedAfter, String location, String locationRadius) throws IOException {
-
-        try {
-            YouTube.Search.List search = mService.search().list("id,snippet");
-
-            //search.setQ(query);
-            //convert publishedAfter string to datetime with method. only fetching stuff published after yesterday
-            search.setPublishedAfter(new DateTime(yesterday()));
-            search.setLocation(location);
-            search.setLocationRadius(locationRadius);
-
-            // Restrict the search results to only include videos. See:
-            // https://developers.google.com/youtube/v3/docs/search/list#type
-            search.setType("video");
-
-            // As a best practice, only retrieve the fields that the
-            // application uses.
-            search.setFields("items(id/videoId)");
-            //search.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
-
-            // Call the API and print results.
-            SearchListResponse searchResponse = search.execute();
-            List<SearchResult> searchResultList = searchResponse.getItems();
-            List<String> videoIds = new ArrayList<String>();
-
-            if (searchResultList != null) {
-
-                // Merge video IDs
-                for (SearchResult searchResult : searchResultList) {
-                    videoIds.add(searchResult.getId().getVideoId());
-                }
-                Joiner stringJoiner = Joiner.on(',');
-                String videoId = stringJoiner.join(videoIds);
-
-                // Call the YouTube Data API's youtube.videos.list method to
-                // retrieve the resources that represent the specified videos.
-                YouTube.Videos.List listVideosRequest = mService.videos().list("snippet, recordingDetails").setId(videoId);
-                VideoListResponse listResponse = listVideosRequest.execute();
-
-                List<Video> videoList = listResponse.getItems();
-
-                if (videoList != null) {
-                    return videoList;
-                }
-            }
-        } catch (GoogleJsonResponseException e) {
-            System.err.println("There was a service error: " + e.getDetails().getCode() + " : "
-                    + e.getDetails().getMessage());
-        } catch (IOException e) {
-            System.err.println("There was an IO error: " + e.getCause() + " : " + e.getMessage());
-        } catch (Throwable t) {
-            t.printStackTrace();
-        }
-        return null;
-    }
+//    public List<Video> getDataFromApi(String publishedAfter, String location, String locationRadius) throws IOException {
+//
+//        try {
+//            YouTube.Search.List search = mService.search().list("id,snippet");
+//
+//            //search.setQ(query);
+//            //convert publishedAfter string to datetime with method. only fetching stuff published after yesterday
+//            search.setPublishedAfter(new DateTime(yesterday()));
+//            search.setLocation(location);
+//            search.setLocationRadius(locationRadius);
+//
+//            // Restrict the search results to only include videos. See:
+//            // https://developers.google.com/youtube/v3/docs/search/list#type
+//            search.setType("video");
+//
+//            // As a best practice, only retrieve the fields that the
+//            // application uses.
+//            search.setFields("items(id/videoId)");
+//            //search.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
+//
+//            // Call the API and print results.
+//            SearchListResponse searchResponse = search.execute();
+//            List<SearchResult> searchResultList = searchResponse.getItems();
+//            List<String> videoIds = new ArrayList<String>();
+//
+//            if (searchResultList != null) {
+//
+//                // Merge video IDs
+//                for (SearchResult searchResult : searchResultList) {
+//                    videoIds.add(searchResult.getId().getVideoId());
+//                }
+//                Joiner stringJoiner = Joiner.on(',');
+//                String videoId = stringJoiner.join(videoIds);
+//
+//                // Call the YouTube Data API's youtube.videos.list method to
+//                // retrieve the resources that represent the specified videos.
+//                YouTube.Videos.List listVideosRequest = mService.videos().list("snippet, recordingDetails").setId(videoId);
+//                VideoListResponse listResponse = listVideosRequest.execute();
+//
+//                List<Video> videoList = listResponse.getItems();
+//
+//                if (videoList != null) {
+//                    return videoList;
+//                }
+//            }
+//        } catch (GoogleJsonResponseException e) {
+//            System.err.println("There was a service error: " + e.getDetails().getCode() + " : "
+//                    + e.getDetails().getMessage());
+//        } catch (IOException e) {
+//            System.err.println("There was an IO error: " + e.getCause() + " : " + e.getMessage());
+//        } catch (Throwable t) {
+//            t.printStackTrace();
+//        }
+//        return null;
+//    }
 
     public List<ListItem> getListData(List<Item> videos) {
 

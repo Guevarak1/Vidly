@@ -11,30 +11,38 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.kevguev.mobile.vidly.Constants;
+import com.kevguev.mobile.vidly.ItemClickCallback;
+import com.kevguev.mobile.vidly.PostResultsListener;
 import com.kevguev.mobile.vidly.R;
+import com.kevguev.mobile.vidly.SharedPreferenceUtil;
 import com.kevguev.mobile.vidly.adapter.SearchAdapter;
 import com.kevguev.mobile.vidly.model.ListItem;
+import com.kevguev.mobile.vidly.model.SearchData;
+import com.kevguev.mobile.vidly.model.jsonpojo.videos.Item;
 
 import java.util.ArrayList;
 
 //our card fragment
-public class MainListFragment extends Fragment implements SearchAdapter.ItemClickCallback{
+public class MainListFragment extends Fragment
+        implements ItemClickCallback, PostResultsListener {
 
     ProgressDialog mProgress;
     private RecyclerView recView;
     public SearchAdapter adapter;
     public ArrayList listData;
-
-    public MainListFragment() {
-        // Required empty public constructor
-    }
-
+    public ArrayList<Item> videoItems;
+    SharedPreferenceUtil sharedPreferenceUtil;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        Bundle bundle = this.getArguments();
+        sharedPreferenceUtil = new SharedPreferenceUtil();
+        if (bundle != null) {
+            listData = bundle.getParcelableArrayList("video_items");
+        }
     }
 
     @Override
@@ -52,6 +60,17 @@ public class MainListFragment extends Fragment implements SearchAdapter.ItemClic
         adapter.setItemClickCallback(this);
         recView.setAdapter(adapter);
 
+        MainActivity mainActivity = (MainActivity) getActivity();
+        mainActivity.setPostResultsListener(this);
+        if(mainActivity.videoItems != null ){
+            videoItems = mainActivity.videoItems;
+
+            SearchData mSearchData = new SearchData();
+            listData = (ArrayList) mSearchData.getListData(videoItems);
+            adapter.setListData(listData);
+            adapter.notifyDataSetChanged();
+
+        }
         return view;
     }
 
@@ -89,9 +108,14 @@ public class MainListFragment extends Fragment implements SearchAdapter.ItemClic
         ListItem item = (ListItem) listData.get(p);
         if (item.isFavorite()) {
             item.setFavorite(false);
+            sharedPreferenceUtil.removeFavorite(getActivity(),item);
         } else {
             item.setFavorite(true);
+            sharedPreferenceUtil.addFavorite(getActivity(),item);
+            Toast.makeText(getActivity(),item.getTitle() + " added to favorites",Toast.LENGTH_SHORT)
+                    .show();
         }
+
         adapter.setListData(listData);
         adapter.notifyDataSetChanged();
     }
@@ -108,5 +132,23 @@ public class MainListFragment extends Fragment implements SearchAdapter.ItemClic
         startActivity(sendIntent);
 
         Toast.makeText(getActivity(),item.getTitle()+" sharing!",Toast.LENGTH_SHORT).show();
+    }
+
+    public static Fragment newInstance() {
+
+        MainListFragment fragment = new MainListFragment();
+        return fragment;
+    }
+
+    @Override
+    public void postResultsToFragment(ArrayList<Item> videos, GoogleAccountCredential mCredential) {
+
+            mProgress.hide();
+            //populate list
+            SearchData mSearchData = new SearchData();
+            listData = (ArrayList) mSearchData.getListData(videos);
+            adapter.setListData(listData);
+            adapter.notifyDataSetChanged();
+
     }
 }

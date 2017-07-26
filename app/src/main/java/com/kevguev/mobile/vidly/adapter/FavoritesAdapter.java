@@ -1,13 +1,13 @@
 package com.kevguev.mobile.vidly.adapter;
 
 import android.content.Context;
-import android.media.Image;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.kevguev.mobile.vidly.ItemClickCallback;
 import com.kevguev.mobile.vidly.R;
@@ -19,15 +19,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by Kevin Guevara on 5/13/2017.
+ * Created by Kevin Guevara on 7/7/2017.
  */
 
-public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchHolder> {
+public class FavoritesAdapter extends RecyclerView.Adapter<FavoritesAdapter.CardViewHolder> {
 
-    private List<ListItem> listData;
+    final Context context;
     private LayoutInflater inflater;
-    private Context context;
-    private SharedPreferenceUtil sharedPreferenceUtil;
+    private List<ListItem> listData;
+    SharedPreferenceUtil sharedPreferenceUtil;
 
     //communication channel via activity
     private ItemClickCallback itemClickCallback;
@@ -36,46 +36,35 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchHold
         this.itemClickCallback = itemClickCallback;
     }
 
-    public SearchAdapter(Context context) {
+
+    public FavoritesAdapter(Context context) {
         this.context = context;
         this.inflater = LayoutInflater.from(context);
         this.listData = new ArrayList<ListItem>();
         sharedPreferenceUtil = new SharedPreferenceUtil();
+
     }
 
     @Override
-    public SearchHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View view = inflater.inflate(R.layout.cardview_items, parent, false);
+    public CardViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+                View view = LayoutInflater.from(context).inflate(R.layout.cardview_items, parent, false);
+        return new CardViewHolder(view);
 
-        return new SearchHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(SearchHolder holder, int position) {
+    public void onBindViewHolder(final CardViewHolder holder, int position) {
 
-        ListItem item = listData.get(position);
-        holder.title.setText(item.getTitle());
-        Picasso.with(context).load(item.getImgUrl()).fit().into(holder.thumbnail);
-        if (checkFavoriteItem(item)) {
-            holder.likeImageView.setImageResource(R.drawable.ic_star_black_24dp);
-        } else {
-            holder.likeImageView.setImageResource(R.drawable.ic_star_border_black_24dp);
-        }
-    }
+        final ListItem video = listData.get(position);
+        holder.title.setText(video.getTitle());
 
-    /*Checks whether a particular product exists in SharedPreferences*/
-    public boolean checkFavoriteItem(ListItem item) {
-        boolean check = false;
-        List<ListItem> favorites = sharedPreferenceUtil.getFavorites(context);
-        if (favorites != null) {
-            for (ListItem product : favorites) {
-                if (product.getVideoUrlId().equals(item.getVideoUrlId())) {
-                    check = true;
-                    break;
-                }
-            }
+        if (video.getImgUrl() != null) {
+            Picasso.with(context)
+                    .load(video.getImgUrl())
+                    .fit()
+                    .into(holder.thumbnail);
         }
-        return check;
+        holder.likeImageView.setImageResource(R.drawable.ic_star_black_24dp);
     }
 
     public void setListData(ArrayList<ListItem> exerciseList) {
@@ -88,20 +77,19 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchHold
         return listData.size();
     }
 
-    //needs a viewholder
-    //assign data to appropriate place in recycler view
-    public class SearchHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+
+    public class CardViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
 
         private TextView title;
         private ImageView thumbnail;
         private ImageView likeImageView;
         private ImageView shareImageView;
 
-        public SearchHolder(View itemView) {
+        public CardViewHolder(View itemView) {
+            // standard view holder pattern with Butterknife view injection
             super(itemView);
 
             title = (TextView) itemView.findViewById(R.id.titleTextView);
-            //subTitle = (TextView) itemView.findViewById(R.id.lbl_item_sub_title);
             thumbnail = (ImageView) itemView.findViewById(R.id.coverImageView);
             thumbnail.setOnClickListener(this);
             likeImageView = (ImageView) itemView.findViewById(R.id.likeImageView);
