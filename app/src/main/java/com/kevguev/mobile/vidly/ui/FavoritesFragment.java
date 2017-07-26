@@ -1,41 +1,47 @@
 package com.kevguev.mobile.vidly.ui;
 
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
+import com.kevguev.mobile.vidly.Constants;
+import com.kevguev.mobile.vidly.ItemClickCallback;
 import com.kevguev.mobile.vidly.R;
+import com.kevguev.mobile.vidly.SharedPreferenceUtil;
 import com.kevguev.mobile.vidly.adapter.FavoritesAdapter;
-import com.kevguev.mobile.vidly.adapter.realm.RealmFavoritesAdapter;
-import com.kevguev.mobile.vidly.model.RealmVideo;
-import com.kevguev.mobile.vidly.realm.RealmController;
+import com.kevguev.mobile.vidly.model.ListItem;
 
 import java.util.ArrayList;
+import java.util.List;
 
-import io.realm.Realm;
-import io.realm.RealmResults;
 
 /**
  * Created by Kevin Guevara on 5/24/2017.
  */
 
-public class FavoritesFragment extends Fragment {
+public class FavoritesFragment extends Fragment
+        implements ItemClickCallback{
 
     private FavoritesAdapter adapter;
-    private Realm realm;
     private LayoutInflater inflater;
     private RecyclerView recycler;
+    ArrayList<ListItem> favorites;
+
+    SharedPreferenceUtil sharedPreferenceUtil;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        this.realm = RealmController.with(this).getRealm();
     }
 
     @Override
@@ -46,18 +52,6 @@ public class FavoritesFragment extends Fragment {
         // Inflate the layout for this fragment
         setupRecycler();
 
-        //if (!Prefs.with(this).getPreLoad()) {
-        setRealmData();
-        //}
-
-        // refresh the realm instance
-        RealmController.with(this).refresh();
-        // get all persisted objects
-        // create the helper adapter and notify data set changes
-        // changes will be reflected automatically
-
-        RealmResults<RealmVideo> videos = RealmController.with(this).getRealmVideos();
-        setRealmAdapter(videos);
 
         return view;
     }
@@ -67,51 +61,82 @@ public class FavoritesFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
     }
 
-    private void setRealmAdapter(RealmResults<RealmVideo> videos){
-
-        RealmFavoritesAdapter realmFavoritesAdapter = new RealmFavoritesAdapter(this.getActivity().getApplicationContext(), videos, true);
-        // Set the data and tell the RecyclerView to draw
-        adapter.setRealmAdapter(realmFavoritesAdapter);
-        adapter.notifyDataSetChanged();
-
-    }
-
     private void setupRecycler() {
         // use a linear layout manager since the cards are vertically scrollable
         final LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
         layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         recycler.setLayoutManager(layoutManager);
+        sharedPreferenceUtil = new SharedPreferenceUtil();
+        favorites = sharedPreferenceUtil.getFavorites(getActivity());
 
-        // create an empty adapter and add it to the recycler view
-        adapter = new FavoritesAdapter(getContext());
-        recycler.setAdapter(adapter);
+        if (favorites == null || favorites.isEmpty()) {
+            Toast.makeText(getActivity(),"No favorites saved", Toast.LENGTH_SHORT).show();
+        } else {
+            // create an empty adapter and add it to the recycler view
+            adapter = new FavoritesAdapter(getContext());
+            recycler.setAdapter(adapter);
+            adapter.setItemClickCallback(this);
+            adapter.setListData(favorites);
+            adapter.notifyDataSetChanged();
+        }
     }
+    public void showAlert(String title, String message) {
+        if (getActivity() != null && !getActivity().isFinishing()) {
+            AlertDialog alertDialog = new AlertDialog.Builder(getActivity())
+                    .create();
+            alertDialog.setTitle(title);
+            alertDialog.setMessage(message);
+            alertDialog.setCancelable(false);
 
-    private void setRealmData() {
+            // setting OK Button
+            alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "OK",
+                    new DialogInterface.OnClickListener() {
 
-        ArrayList<RealmVideo> videos = new ArrayList<>();
-        RealmVideo video = new RealmVideo();
-
-        video.setId(1 + System.currentTimeMillis());
-        video.setText("Random1");
-        video.setImageSrc("http://api.androidhive.info/images/realm/1.png");
-        videos.add(video);
-
-        video.setId(2 + System.currentTimeMillis());
-        video.setText("Random2");
-        video.setImageSrc("http://api.androidhive.info/images/realm/2.png");
-        videos.add(video);
-
-        for(RealmVideo v : videos){
-            realm.beginTransaction();
-            realm.copyToRealmOrUpdate(v);
-            realm.commitTransaction();
-
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                            // activity.finish();
+                            getFragmentManager().popBackStackImmediate();
+                        }
+                    });
+            alertDialog.show();
         }
     }
 
-    public static Fragment newInstance() {
-        FavoritesFragment fragment = new FavoritesFragment();
-        return fragment;
+    @Override
+    public void onThumbnailClicked(int p) {
+        ListItem item = (ListItem) favorites.get(p);
+        Intent i = new Intent(getActivity(), DetailActivity.class);
+        i.putExtra(Constants.BUNDLE_EXTRAS, item);
+        startActivity(i);
+
+    }
+
+    @Override
+    public void onLikeImageClicked(View v, int p) {
+        ListItem item = (ListItem) favorites.get(p);
+        if (item.isFavorite()) {
+            item.setFavorite(false);
+            sharedPreferenceUtil.removeFavorite(getActivity(),item);
+            favorites.remove(p);
+            adapter.notifyItemRemoved(p);
+            adapter.notifyItemRangeChanged(p, favorites.size());
+        }
+        adapter.setListData(favorites);
+        adapter.notifyDataSetChanged();
+    }
+
+    @Override
+    public void onShareImageClicked(int p) {
+        ListItem item = (ListItem) favorites.get(p);
+        String videoUrlId = item.getVideoUrlId();
+
+        Intent sendIntent = new Intent();
+        sendIntent.setAction(Intent.ACTION_SEND);
+        sendIntent.putExtra(Intent.EXTRA_TEXT, "Sharing from Local Vids\n\n" + "https://www.youtube.com/watch?v=" + videoUrlId);
+        sendIntent.setType("text/plain");
+        startActivity(sendIntent);
+
+        Toast.makeText(getActivity(),item.getTitle()+" sharing!",Toast.LENGTH_SHORT).show();
+
     }
 }

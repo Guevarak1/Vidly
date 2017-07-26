@@ -1,7 +1,6 @@
 package com.kevguev.mobile.vidly.adapter;
 
 import android.content.Context;
-import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,83 +9,76 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.kevguev.mobile.vidly.ItemClickCallback;
 import com.kevguev.mobile.vidly.R;
-import com.kevguev.mobile.vidly.adapter.realm.RealmRecyclerViewAdapter;
-import com.kevguev.mobile.vidly.model.RealmVideo;
-import com.kevguev.mobile.vidly.realm.RealmController;
+import com.kevguev.mobile.vidly.SharedPreferenceUtil;
+import com.kevguev.mobile.vidly.model.ListItem;
 import com.squareup.picasso.Picasso;
 
-import io.realm.Realm;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by Kevin Guevara on 7/7/2017.
  */
 
-public class FavoritesAdapter extends RealmRecyclerViewAdapter<RealmVideo> {
+public class FavoritesAdapter extends RecyclerView.Adapter<FavoritesAdapter.CardViewHolder> {
 
     final Context context;
-    private Realm realm;
     private LayoutInflater inflater;
+    private List<ListItem> listData;
+    SharedPreferenceUtil sharedPreferenceUtil;
+
+    //communication channel via activity
+    private ItemClickCallback itemClickCallback;
+
+    public void setItemClickCallback(final ItemClickCallback itemClickCallback) {
+        this.itemClickCallback = itemClickCallback;
+    }
+
 
     public FavoritesAdapter(Context context) {
         this.context = context;
+        this.inflater = LayoutInflater.from(context);
+        this.listData = new ArrayList<ListItem>();
+        sharedPreferenceUtil = new SharedPreferenceUtil();
+
     }
 
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.cardview_items, parent, false);
+    public CardViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+                View view = LayoutInflater.from(context).inflate(R.layout.cardview_items, parent, false);
         return new CardViewHolder(view);
+
     }
 
     @Override
-    public void onBindViewHolder(RecyclerView.ViewHolder viewHolder, int position) {
+    public void onBindViewHolder(final CardViewHolder holder, int position) {
 
-        realm = RealmController.getInstance().getRealm();
+        final ListItem video = listData.get(position);
+        holder.title.setText(video.getTitle());
 
-        final RealmVideo video = getItem(position);
-        //cast the generic view holder to our specific one
-        final CardViewHolder holder = (CardViewHolder) viewHolder;
-
-        holder.title.setText(video.getText());
-
-        if (video.getImageSrc() != null) {
+        if (video.getImgUrl() != null) {
             Picasso.with(context)
-                    .load(video.getImageSrc())
+                    .load(video.getImgUrl())
                     .fit()
                     .into(holder.thumbnail);
         }
+        holder.likeImageView.setImageResource(R.drawable.ic_star_black_24dp);
+    }
 
-        holder.thumbnail.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(context, "thumbnail clicked", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        holder.likeImageView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(context, "like clicked", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        holder.shareImageView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(context, "share clicked", Toast.LENGTH_SHORT).show();
-            }
-        });
+    public void setListData(ArrayList<ListItem> exerciseList) {
+        this.listData.clear();
+        this.listData.addAll(exerciseList);
     }
 
     @Override
     public int getItemCount() {
-        if (getRealmAdapter() != null) {
-            return getRealmAdapter().getCount();
-        }
-        return 0;
+        return listData.size();
     }
 
-    public static class CardViewHolder extends RecyclerView.ViewHolder {
+
+    public class CardViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
 
         private TextView title;
         private ImageView thumbnail;
@@ -99,8 +91,22 @@ public class FavoritesAdapter extends RealmRecyclerViewAdapter<RealmVideo> {
 
             title = (TextView) itemView.findViewById(R.id.titleTextView);
             thumbnail = (ImageView) itemView.findViewById(R.id.coverImageView);
+            thumbnail.setOnClickListener(this);
             likeImageView = (ImageView) itemView.findViewById(R.id.likeImageView);
+            likeImageView.setOnClickListener(this);
             shareImageView = (ImageView) itemView.findViewById(R.id.shareImageView);
+            shareImageView.setOnClickListener(this);
+        }
+
+        @Override
+        public void onClick(View view) {
+            if (view.getId() == R.id.likeImageView) {
+                itemClickCallback.onLikeImageClicked(likeImageView, getAdapterPosition());
+            } else if (view.getId() == R.id.shareImageView) {
+                itemClickCallback.onShareImageClicked(getAdapterPosition());
+            } else if (view.getId() == R.id.coverImageView) {
+                itemClickCallback.onThumbnailClicked(getAdapterPosition());
+            }
         }
     }
 }

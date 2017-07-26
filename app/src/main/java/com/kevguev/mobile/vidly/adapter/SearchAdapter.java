@@ -9,7 +9,9 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.kevguev.mobile.vidly.ItemClickCallback;
 import com.kevguev.mobile.vidly.R;
+import com.kevguev.mobile.vidly.SharedPreferenceUtil;
 import com.kevguev.mobile.vidly.model.ListItem;
 import com.squareup.picasso.Picasso;
 
@@ -25,17 +27,10 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchHold
     private List<ListItem> listData;
     private LayoutInflater inflater;
     private Context context;
+    private SharedPreferenceUtil sharedPreferenceUtil;
 
     //communication channel via activity
     private ItemClickCallback itemClickCallback;
-
-    public interface ItemClickCallback {
-        void onThumbnailClicked(int p);
-
-        void onLikeImageClicked(View v, int p);
-
-        void onShareImageClicked(int p);
-    }
 
     public void setItemClickCallback(final ItemClickCallback itemClickCallback) {
         this.itemClickCallback = itemClickCallback;
@@ -45,11 +40,7 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchHold
         this.context = context;
         this.inflater = LayoutInflater.from(context);
         this.listData = new ArrayList<ListItem>();
-    }
-
-    public SearchAdapter(List<ListItem> listdata, Context c) {
-        this.inflater = LayoutInflater.from(c);
-        this.listData = listdata;
+        sharedPreferenceUtil = new SharedPreferenceUtil();
     }
 
     @Override
@@ -65,11 +56,26 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.SearchHold
         ListItem item = listData.get(position);
         holder.title.setText(item.getTitle());
         Picasso.with(context).load(item.getImgUrl()).fit().into(holder.thumbnail);
-        if (item.isFavorite()) {
+        if (checkFavoriteItem(item)) {
             holder.likeImageView.setImageResource(R.drawable.ic_star_black_24dp);
         } else {
             holder.likeImageView.setImageResource(R.drawable.ic_star_border_black_24dp);
         }
+    }
+
+    /*Checks whether a particular product exists in SharedPreferences*/
+    public boolean checkFavoriteItem(ListItem item) {
+        boolean check = false;
+        List<ListItem> favorites = sharedPreferenceUtil.getFavorites(context);
+        if (favorites != null) {
+            for (ListItem product : favorites) {
+                if (product.getVideoUrlId().equals(item.getVideoUrlId())) {
+                    check = true;
+                    break;
+                }
+            }
+        }
+        return check;
     }
 
     public void setListData(ArrayList<ListItem> exerciseList) {

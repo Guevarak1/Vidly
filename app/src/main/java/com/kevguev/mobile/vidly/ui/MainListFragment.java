@@ -13,8 +13,10 @@ import android.widget.Toast;
 
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.kevguev.mobile.vidly.Constants;
+import com.kevguev.mobile.vidly.ItemClickCallback;
 import com.kevguev.mobile.vidly.PostResultsListener;
 import com.kevguev.mobile.vidly.R;
+import com.kevguev.mobile.vidly.SharedPreferenceUtil;
 import com.kevguev.mobile.vidly.adapter.SearchAdapter;
 import com.kevguev.mobile.vidly.model.ListItem;
 import com.kevguev.mobile.vidly.model.SearchData;
@@ -23,22 +25,24 @@ import com.kevguev.mobile.vidly.model.jsonpojo.videos.Item;
 import java.util.ArrayList;
 
 //our card fragment
-public class MainListFragment extends Fragment implements SearchAdapter.ItemClickCallback, PostResultsListener {
+public class MainListFragment extends Fragment
+        implements ItemClickCallback, PostResultsListener {
 
     ProgressDialog mProgress;
     private RecyclerView recView;
     public SearchAdapter adapter;
     public ArrayList listData;
     public ArrayList<Item> videoItems;
+    SharedPreferenceUtil sharedPreferenceUtil;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Bundle bundle = this.getArguments();
+        sharedPreferenceUtil = new SharedPreferenceUtil();
         if (bundle != null) {
             listData = bundle.getParcelableArrayList("video_items");
         }
-
     }
 
     @Override
@@ -104,9 +108,14 @@ public class MainListFragment extends Fragment implements SearchAdapter.ItemClic
         ListItem item = (ListItem) listData.get(p);
         if (item.isFavorite()) {
             item.setFavorite(false);
+            sharedPreferenceUtil.removeFavorite(getActivity(),item);
         } else {
             item.setFavorite(true);
+            sharedPreferenceUtil.addFavorite(getActivity(),item);
+            Toast.makeText(getActivity(),item.getTitle() + " added to favorites",Toast.LENGTH_SHORT)
+                    .show();
         }
+
         adapter.setListData(listData);
         adapter.notifyDataSetChanged();
     }
