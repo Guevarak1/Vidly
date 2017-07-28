@@ -17,7 +17,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="0dip"
-            android:layout_weight="3.2"
+            android:layout_weight="3"
             android:orientation="vertical">
 
             <FrameLayout
@@ -38,20 +38,22 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:padding="8dp"
             android:orientation="vertical">
+
             <TextView
                 android:id="@+id/titleTextView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="4dp"
-                android:textSize="@dimen/text_size"
-                />
+                android:textColor="@android:color/black"
+                android:textSize="@dimen/text_size" />
         </LinearLayout>
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="0dip"
-            android:layout_weight="0.8"
             android:layout_margin="2dp"
+            android:layout_weight="1"
             android:gravity="center|right"
             android:orientation="horizontal">
 
