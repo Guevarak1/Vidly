@@ -159,7 +159,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         });
 
         CoordinatorLayout.LayoutParams layoutParamsBottonNav = (CoordinatorLayout.LayoutParams) bottomNavigationView.getLayoutParams();
-        layoutParamsBottonNav.setBehavior(new BottomNavigationViewBehavior());
+        //layoutParamsBottonNav.setBehavior(new BottomNavigationViewBehavior());
 
         CoordinatorLayout.LayoutParams layoutParamsfab= (CoordinatorLayout.LayoutParams) mFab.getLayoutParams();
         layoutParamsfab.setBehavior(new ScrollAnimationFab());
