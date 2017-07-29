@@ -1,4 +1,4 @@
-package com.kevguev.mobile.vidly;
+package com.kevguev.mobile.vidly.listeners;
 
 import android.view.View;
 

@@ -8,14 +8,10 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.BottomNavigationView.OnNavigationItemSelectedListener;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.Toolbar;
@@ -31,20 +27,15 @@ import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccoun
 import com.google.api.client.repackaged.com.google.common.base.Joiner;
 import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.youtube.YouTubeScopes;
-import com.kevguev.mobile.vidly.AppUtils;
-import com.kevguev.mobile.vidly.BottomNavigationViewBehavior;
+import com.kevguev.mobile.vidly.utils.AppUtils;
 import com.kevguev.mobile.vidly.Constants;
-import com.kevguev.mobile.vidly.PostResultsListener;
+import com.kevguev.mobile.vidly.listeners.PostResultsListener;
 import com.kevguev.mobile.vidly.R;
-import com.kevguev.mobile.vidly.RichBottomNavigationView;
-import com.kevguev.mobile.vidly.ScrollAnimationFab;
-import com.kevguev.mobile.vidly.model.ListItem;
-import com.kevguev.mobile.vidly.model.SearchData;
+import com.kevguev.mobile.vidly.behaviors.ScrollAnimationFab;
 import com.kevguev.mobile.vidly.model.jsonpojo.videoids.Items;
 import com.kevguev.mobile.vidly.model.jsonpojo.videos.Item;
 import com.kevguev.mobile.vidly.model.jsonpojo.videos.Videos;
 import com.kevguev.mobile.vidly.model.retrofit.SearchEndpointInterface;
-import com.kevguev.mobile.vidly.ui.adapter.ViewPagerAdapter;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -60,6 +51,8 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
+import static com.kevguev.mobile.vidly.Constants.API_KEY;
+import static com.kevguev.mobile.vidly.Constants.BASE_URL;
 import static com.kevguev.mobile.vidly.Constants.EXTRA_CURRENT_LOCATION;
 import static com.kevguev.mobile.vidly.Constants.EXTRA_LOCATION;
 import static com.kevguev.mobile.vidly.Constants.FIELDS;
@@ -71,13 +64,14 @@ import static com.kevguev.mobile.vidly.Constants.REQUEST_AUTHORIZATION;
 import static com.kevguev.mobile.vidly.Constants.REQUEST_GOOGLE_PLAY_SERVICES;
 import static com.kevguev.mobile.vidly.Constants.SETTINGS_RESULT;
 import static com.kevguev.mobile.vidly.Constants.SNIPPET_PART;
+import static com.kevguev.mobile.vidly.Constants.TAG_FRAGMENT_FAVORITES;
+import static com.kevguev.mobile.vidly.Constants.TAG_FRAGMENT_MAIN_LIST;
+import static com.kevguev.mobile.vidly.Constants.TAG_FRAGMENT_MAP;
 import static com.kevguev.mobile.vidly.Constants.VIDEO;
 
 //find out whats being uploaded near you
 public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks{
 
-    public static final String BASE_URL = "https://www.googleapis.com/youtube/v3/";
-    public static final String API_KEY = "AIzaSyCm0Kx6byqy64NO1f5XDAOoRr7jD9EZCyM";
     Retrofit retrofit = new Retrofit.Builder()
             .baseUrl(BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
@@ -85,26 +79,21 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     SearchEndpointInterface apiService = retrofit.create(SearchEndpointInterface.class);
 
     protected static final String TAG = MainActivity.class.getSimpleName();
-
     private Toolbar toolbar;
     private RichBottomNavigationView bottomNavigationView;
-    ProgressDialog mProgress;
-    FloatingActionButton mFab;
-    String currentLocation;
-    GoogleAccountCredential mCredential;
+    private ProgressDialog mProgress;
+    private FloatingActionButton mFab;
+    private String currentLocation;
+    private GoogleAccountCredential mCredential;
     private static final String[] SCOPES = {YouTubeScopes.YOUTUBE_READONLY};
     private PostResultsListener postResultsListener;
     public ArrayList<Item> videoItems = new ArrayList<Item>();
     private List<Fragment> fragments = new ArrayList<>(3);
-    private static final String TAG_FRAGMENT_MAIN_LIST= "tag_frag_main_list";
-    private static final String TAG_FRAGMENT_MAP= "tag_frag_map";
-    private static final String TAG_FRAGMENT_FAVORITES= "tag_frag_favorites";
 
-    /**
-     * Create the main activity.
-     *
-     * @param savedInstanceState previously saved instance data.
-     */
+    public void setPostResultsListener(PostResultsListener l){
+        postResultsListener = l;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -129,16 +118,12 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             }
         });
 
-
         Intent i = getIntent();
         if (i != null) {
             currentLocation = i.getStringExtra(EXTRA_CURRENT_LOCATION);
         }
 
         bottomNavigationView = (RichBottomNavigationView) findViewById(R.id.navigation);
-
-        //// TODO: 7/20/2017
-        // fab communicates with list and map fragment. switches hold the video data between fragments
         bottomNavigationView.setOnNavigationItemSelectedListener(new OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
@@ -266,7 +251,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 .show();
     }
 
-
     private void getResultsFromApi() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         String prefLocation = prefs.getString(getString(R.string.pref_location), "defaultValue");
@@ -275,8 +259,8 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
     private void getResultsFromApi(String locationPicked) {
 
-        if (!isGooglePlayServicesAvailable()) {
-            acquireGooglePlayServices();
+        if (!AppUtils.isGooglePlayServicesAvailable(this)) {
+            AppUtils.acquireGooglePlayServices(this, this);
         } else if (mCredential.getSelectedAccountName() == null) {
             chooseAccount();
         } else if (!AppUtils.isDeviceOnline(this)) {
@@ -288,7 +272,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             String radius = prefs.getString(getString(R.string.pref_radius), "1km");
 
             mProgress.show(); // on pre
-            getVideos(locationPicked, radius, getPastDate(publishedAfter));
+            getVideos(locationPicked, radius, AppUtils.getPastDate(publishedAfter));
         }
     }
 
@@ -326,33 +310,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 .beginTransaction()
                 .replace(R.id.frame_layout, fragments.get(pos), tag)
                 .commit();
-    }
-    /**
-     * Check that Google Play services APK is installed and up to date.
-     *
-     * @return true if Google Play Services is available and up to
-     * date on this device; false otherwise.
-     */
-    public boolean isGooglePlayServicesAvailable() {
-        GoogleApiAvailability apiAvailability =
-                GoogleApiAvailability.getInstance();
-        final int connectionStatusCode =
-                apiAvailability.isGooglePlayServicesAvailable(this);
-        return connectionStatusCode == ConnectionResult.SUCCESS;
-    }
-
-    /**
-     * Attempt to resolve a missing, out-of-date, invalid or disabled Google
-     * Play Services installation via a user dialog, if possible.
-     */
-    public void acquireGooglePlayServices() {
-        GoogleApiAvailability apiAvailability =
-                GoogleApiAvailability.getInstance();
-        final int connectionStatusCode =
-                apiAvailability.isGooglePlayServicesAvailable(this);
-        if (apiAvailability.isUserResolvableError(connectionStatusCode)) {
-            AppUtils.showGooglePlayServicesAvailabilityErrorDialog(connectionStatusCode, this);
-        }
     }
 
     /**
@@ -425,10 +382,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         EasyPermissions.onRequestPermissionsResult(
                 requestCode, permissions, grantResults, this);
 
-    }
-
-    public void setPostResultsListener(PostResultsListener l){
-        postResultsListener = l;
     }
 
     @Override
@@ -516,14 +469,5 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 t.printStackTrace();
             }
         });
-    }
-
-    private String getPastDate(int days) {
-        final Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.DATE, - days);
-
-        return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
-                .format(cal.getTime());
-
     }
 }

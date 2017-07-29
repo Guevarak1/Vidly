@@ -1,4 +1,4 @@
-package com.kevguev.mobile.vidly;
+package com.kevguev.mobile.vidly.behaviors;
 
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.CoordinatorLayout;

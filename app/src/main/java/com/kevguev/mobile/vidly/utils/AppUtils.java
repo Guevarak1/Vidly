@@ -1,5 +1,6 @@
-package com.kevguev.mobile.vidly;
+package com.kevguev.mobile.vidly.utils;
 
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -8,7 +9,17 @@ import android.net.NetworkInfo;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.preference.PreferenceManager;
 
+import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
+import com.kevguev.mobile.vidly.Constants;
+import com.kevguev.mobile.vidly.R;
+import com.kevguev.mobile.vidly.model.ListItem;
+import com.kevguev.mobile.vidly.model.jsonpojo.videos.Item;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
 
 /**
  * Created by Kevin Guevara on 6/6/2017.
@@ -106,5 +117,59 @@ public class AppUtils {
                 (ConnectivityManager) activity.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
         return (networkInfo != null && networkInfo.isConnected());
+    }
+
+    public static String getPastDate(int days) {
+        final Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DATE, - days);
+
+        return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
+                .format(cal.getTime());
+
+
+    }
+
+    /**
+     * Check that Google Play services APK is installed and up to date.
+     *
+     * @return true if Google Play Services is available and up to
+     * date on this device; false otherwise.
+     */
+    public static boolean isGooglePlayServicesAvailable(Context context) {
+        GoogleApiAvailability apiAvailability =
+                GoogleApiAvailability.getInstance();
+        final int connectionStatusCode =
+                apiAvailability.isGooglePlayServicesAvailable(context);
+        return connectionStatusCode == ConnectionResult.SUCCESS;
+    }
+    /**
+     * Attempt to resolve a missing, out-of-date, invalid or disabled Google
+     * Play Services installation via a user dialog, if possible.
+     */
+    public static void acquireGooglePlayServices(Context context, AppCompatActivity activity) {
+        GoogleApiAvailability apiAvailability =
+                GoogleApiAvailability.getInstance();
+        final int connectionStatusCode =
+                apiAvailability.isGooglePlayServicesAvailable(context);
+        if (apiAvailability.isUserResolvableError(connectionStatusCode)) {
+            AppUtils.showGooglePlayServicesAvailabilityErrorDialog(connectionStatusCode, activity);
+        }
+    }
+
+    public static List<ListItem> getListData(List<Item> videos) {
+
+        List<ListItem> data = new ArrayList<>();
+
+        //create ListItem with dummy data and then add it to our list
+        for (Item video: videos) {
+            ListItem item = new ListItem();
+            item.setImgUrl(video.getSnippet().getThumbnails().getMedium().getUrl());
+            item.setTitle(video.getSnippet().getTitle());
+            item.setSubtitle(video.getSnippet().getDescription());
+            item.setVideoUrlId(video.getId());
+            data.add(item);
+        }
+
+        return data;
     }
 }

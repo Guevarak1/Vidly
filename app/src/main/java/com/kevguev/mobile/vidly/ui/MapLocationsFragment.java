@@ -1,52 +1,36 @@
 package com.kevguev.mobile.vidly.ui;
 
 import android.app.ProgressDialog;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v7.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
-import com.afollestad.materialdialogs.MaterialDialog;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
-import com.google.api.client.googleapis.extensions.android.gms.auth.GooglePlayServicesAvailabilityIOException;
-import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
-import com.google.api.services.youtube.model.GeoPoint;
-import com.google.api.services.youtube.model.Video;
-import com.kevguev.mobile.vidly.App;
 import com.kevguev.mobile.vidly.Constants;
-import com.kevguev.mobile.vidly.PostResultsListener;
+import com.kevguev.mobile.vidly.listeners.PostResultsListener;
 import com.kevguev.mobile.vidly.R;
 import com.kevguev.mobile.vidly.model.ListItem;
-import com.kevguev.mobile.vidly.model.SearchData;
 import com.kevguev.mobile.vidly.model.jsonpojo.videos.Item;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 
 import static com.kevguev.mobile.vidly.Constants.EXTRA_LOCATION;
-import static com.kevguev.mobile.vidly.Constants.PREF_ACCOUNT_NAME;
-import static com.kevguev.mobile.vidly.Constants.REQUEST_AUTHORIZATION;
 
 /**
  * Created by Kevin Guevara on 5/24/2017.
@@ -68,7 +52,6 @@ public class MapLocationsFragment extends Fragment implements PostResultsListene
             lastLocation = bundle.getString(EXTRA_LOCATION, "");
             videos = bundle.getParcelableArrayList("video_items");
         }
-
     }
 
     @Nullable
@@ -101,23 +84,18 @@ public class MapLocationsFragment extends Fragment implements PostResultsListene
                 googleMap = mMap;
 
                 // For showing a move to my location button
-                googleMap.setMyLocationEnabled(true);
+                //googleMap.setMyLocationEnabled(true);
 
                 // For dropping a marker at a point on the Map
                 LatLng currentLocation = parseLocationString(lastLocation);
                 googleMap.addMarker(new MarkerOptions().position(currentLocation).title("Marker Title").snippet("Marker Description"));
 
-                // For zooming automatically to the location of the marker
-//                CameraPosition cameraPosition = new CameraPosition.Builder().target(currentLocation).zoom(12).build();
-//                googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
                 if(mainActivity.videoItems != null ){
                     videos = mainActivity.videoItems;
                     updateGoogleMap(videos);
                 }
             }
         });
-
-
         return rootView;
     }
 
@@ -164,10 +142,8 @@ public class MapLocationsFragment extends Fragment implements PostResultsListene
     }
 
     public void updateGoogleMap(ArrayList<Item> videos) {
-        //googleMap.addMarker(new MarkerOptions().position(currentLocation).title("Chosen Location"));
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
         String prefLocation = prefs.getString(getString(R.string.pref_location), "defaultValue");
-        //LatLng currentLocation = parseLocationString(lastLocation);
         LatLng currentLocation = parseLocationString(prefLocation);
 
         // For zooming automatically to the location of the marker

@@ -1,4 +1,4 @@
-package com.kevguev.mobile.vidly;
+package com.kevguev.mobile.vidly.ui;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -20,6 +20,8 @@ import android.support.v7.view.menu.MenuView;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
+
+import com.kevguev.mobile.vidly.R;
 
 import static android.widget.AdapterView.INVALID_POSITION;
 

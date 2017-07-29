@@ -36,10 +36,11 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_above="@+id/navigation"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior" 
         android:animateLayoutChanges="true">
     </FrameLayout>
 
-    <com.kevguev.mobile.vidly.RichBottomNavigationView
+    <com.kevguev.mobile.vidly.ui.RichBottomNavigationView
         android:id="@+id/navigation"
         android:layout_width="match_parent"
         android:layout_height="56dp"
@@ -53,10 +54,10 @@
     <!--app:layout_behavior="@string/appbar_scrolling_view_behavior"-->
 
     <!--<android.support.v4.view.ViewPager-->
-        <!--android:id="@+id/viewpager"-->
-        <!--android:layout_width="match_parent"-->
-        <!--android:layout_height="match_parent"-->
-        <!--app:layout_behavior="@string/appbar_scrolling_view_behavior"  />-->
+    <!--android:id="@+id/viewpager"-->
+    <!--android:layout_width="match_parent"-->
+    <!--android:layout_height="match_parent"-->
+    <!--app:layout_behavior="@string/appbar_scrolling_view_behavior"  />-->
 
 
     <!--app:layout_anchor="@id/rec_list"-->

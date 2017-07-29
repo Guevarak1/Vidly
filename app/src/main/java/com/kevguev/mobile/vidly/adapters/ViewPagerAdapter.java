@@ -1,4 +1,4 @@
-package com.kevguev.mobile.vidly.ui.adapter;
+package com.kevguev.mobile.vidly.adapters;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;

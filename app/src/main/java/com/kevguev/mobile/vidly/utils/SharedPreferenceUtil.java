@@ -1,4 +1,4 @@
-package com.kevguev.mobile.vidly;
+package com.kevguev.mobile.vidly.utils;
 
 import android.content.Context;
 import android.content.SharedPreferences;

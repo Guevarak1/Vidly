@@ -13,13 +13,13 @@ import android.widget.Toast;
 
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.kevguev.mobile.vidly.Constants;
-import com.kevguev.mobile.vidly.ItemClickCallback;
-import com.kevguev.mobile.vidly.PostResultsListener;
+import com.kevguev.mobile.vidly.listeners.ItemClickCallback;
+import com.kevguev.mobile.vidly.listeners.PostResultsListener;
 import com.kevguev.mobile.vidly.R;
-import com.kevguev.mobile.vidly.SharedPreferenceUtil;
-import com.kevguev.mobile.vidly.adapter.SearchAdapter;
+import com.kevguev.mobile.vidly.utils.AppUtils;
+import com.kevguev.mobile.vidly.utils.SharedPreferenceUtil;
+import com.kevguev.mobile.vidly.adapters.CardViewAdapter;
 import com.kevguev.mobile.vidly.model.ListItem;
-import com.kevguev.mobile.vidly.model.SearchData;
 import com.kevguev.mobile.vidly.model.jsonpojo.videos.Item;
 
 import java.util.ArrayList;
@@ -30,7 +30,7 @@ public class MainListFragment extends Fragment
 
     ProgressDialog mProgress;
     private RecyclerView recView;
-    public SearchAdapter adapter;
+    public CardViewAdapter adapter;
     public ArrayList listData;
     public ArrayList<Item> videoItems;
     SharedPreferenceUtil sharedPreferenceUtil;
@@ -56,7 +56,7 @@ public class MainListFragment extends Fragment
         recView = (RecyclerView) view.findViewById(R.id.rec_list);
         //layout manager: girdlayout manager or staggered grid layout manager
         recView.setLayoutManager(new LinearLayoutManager(getActivity()));
-        adapter = new SearchAdapter(getActivity());
+        adapter = new CardViewAdapter(getActivity(), false);
         adapter.setItemClickCallback(this);
         recView.setAdapter(adapter);
 
@@ -64,34 +64,11 @@ public class MainListFragment extends Fragment
         mainActivity.setPostResultsListener(this);
         if(mainActivity.videoItems != null ){
             videoItems = mainActivity.videoItems;
-
-            SearchData mSearchData = new SearchData();
-            listData = (ArrayList) mSearchData.getListData(videoItems);
+            listData = (ArrayList) AppUtils.getListData(videoItems);
             adapter.setListData(listData);
             adapter.notifyDataSetChanged();
-
         }
         return view;
-    }
-
-    @Override
-    public void onStart() {
-        super.onStart();
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
     }
 
     @Override
@@ -100,7 +77,6 @@ public class MainListFragment extends Fragment
         Intent i = new Intent(getActivity(), DetailActivity.class);
         i.putExtra(Constants.BUNDLE_EXTRAS, item);
         startActivity(i);
-
     }
 
     @Override
@@ -115,7 +91,6 @@ public class MainListFragment extends Fragment
             Toast.makeText(getActivity(),item.getTitle() + " added to favorites",Toast.LENGTH_SHORT)
                     .show();
         }
-
         adapter.setListData(listData);
         adapter.notifyDataSetChanged();
     }
@@ -134,21 +109,12 @@ public class MainListFragment extends Fragment
         Toast.makeText(getActivity(),item.getTitle()+" sharing!",Toast.LENGTH_SHORT).show();
     }
 
-    public static Fragment newInstance() {
-
-        MainListFragment fragment = new MainListFragment();
-        return fragment;
-    }
-
     @Override
     public void postResultsToFragment(ArrayList<Item> videos, GoogleAccountCredential mCredential) {
-
             mProgress.hide();
             //populate list
-            SearchData mSearchData = new SearchData();
-            listData = (ArrayList) mSearchData.getListData(videos);
+            listData = (ArrayList) AppUtils.getListData(videos);
             adapter.setListData(listData);
             adapter.notifyDataSetChanged();
-
     }
 }

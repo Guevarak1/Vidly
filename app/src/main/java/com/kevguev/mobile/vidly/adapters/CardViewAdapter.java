@@ -1,4 +1,4 @@
-package com.kevguev.mobile.vidly.adapter;
+package com.kevguev.mobile.vidly.adapters;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
@@ -7,11 +7,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.kevguev.mobile.vidly.ItemClickCallback;
+import com.kevguev.mobile.vidly.listeners.ItemClickCallback;
 import com.kevguev.mobile.vidly.R;
-import com.kevguev.mobile.vidly.SharedPreferenceUtil;
+import com.kevguev.mobile.vidly.utils.SharedPreferenceUtil;
 import com.kevguev.mobile.vidly.model.ListItem;
 import com.squareup.picasso.Picasso;
 
@@ -19,15 +18,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by Kevin Guevara on 7/7/2017.
+ * Created by Kevin Guevara on 5/13/2017.
  */
 
-public class FavoritesAdapter extends RecyclerView.Adapter<FavoritesAdapter.CardViewHolder> {
+public class CardViewAdapter extends RecyclerView.Adapter<CardViewAdapter.SearchHolder> {
 
-    final Context context;
-    private LayoutInflater inflater;
     private List<ListItem> listData;
-    SharedPreferenceUtil sharedPreferenceUtil;
+    private LayoutInflater inflater;
+    private Context context;
+    private SharedPreferenceUtil sharedPreferenceUtil;
+    private boolean fromFavorites;
 
     //communication channel via activity
     private ItemClickCallback itemClickCallback;
@@ -36,35 +36,54 @@ public class FavoritesAdapter extends RecyclerView.Adapter<FavoritesAdapter.Card
         this.itemClickCallback = itemClickCallback;
     }
 
-
-    public FavoritesAdapter(Context context) {
+    //if fromFavorites is set to true, they all should be stared.
+    //should only be set to true in favorites fragments
+    public CardViewAdapter(Context context, boolean fromFavorites) {
         this.context = context;
         this.inflater = LayoutInflater.from(context);
         this.listData = new ArrayList<ListItem>();
         sharedPreferenceUtil = new SharedPreferenceUtil();
-
+        this.fromFavorites = fromFavorites;
     }
 
     @Override
-    public CardViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-                View view = LayoutInflater.from(context).inflate(R.layout.cardview_items, parent, false);
-        return new CardViewHolder(view);
+    public SearchHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        View view = inflater.inflate(R.layout.cardview_items, parent, false);
 
+        return new SearchHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(final CardViewHolder holder, int position) {
+    public void onBindViewHolder(SearchHolder holder, int position) {
 
-        final ListItem video = listData.get(position);
-        holder.title.setText(video.getTitle());
-
-        if (video.getImgUrl() != null) {
-            Picasso.with(context)
-                    .load(video.getImgUrl())
-                    .fit()
-                    .into(holder.thumbnail);
+        ListItem item = listData.get(position);
+        holder.title.setText(item.getTitle());
+        Picasso.with(context).load(item.getImgUrl()).fit().into(holder.thumbnail);
+        if(fromFavorites){
+            holder.likeImageView.setImageResource(R.drawable.ic_star_black_24dp);
         }
-        holder.likeImageView.setImageResource(R.drawable.ic_star_black_24dp);
+        else {
+            if (checkFavoriteItem(item)) {
+                holder.likeImageView.setImageResource(R.drawable.ic_star_black_24dp);
+            } else {
+                holder.likeImageView.setImageResource(R.drawable.ic_star_border_black_24dp);
+            }
+        }
+    }
+
+    /*Checks whether a particular product exists in SharedPreferences*/
+    public boolean checkFavoriteItem(ListItem item) {
+        boolean check = false;
+        List<ListItem> favorites = sharedPreferenceUtil.getFavorites(context);
+        if (favorites != null) {
+            for (ListItem product : favorites) {
+                if (product.getVideoUrlId().equals(item.getVideoUrlId())) {
+                    check = true;
+                    break;
+                }
+            }
+        }
+        return check;
     }
 
     public void setListData(ArrayList<ListItem> exerciseList) {
@@ -77,19 +96,20 @@ public class FavoritesAdapter extends RecyclerView.Adapter<FavoritesAdapter.Card
         return listData.size();
     }
 
-
-    public class CardViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
+    //needs a viewholder
+    //assign data to appropriate place in recycler view
+    public class SearchHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
         private TextView title;
         private ImageView thumbnail;
         private ImageView likeImageView;
         private ImageView shareImageView;
 
-        public CardViewHolder(View itemView) {
-            // standard view holder pattern with Butterknife view injection
+        public SearchHolder(View itemView) {
             super(itemView);
 
             title = (TextView) itemView.findViewById(R.id.titleTextView);
+            //subTitle = (TextView) itemView.findViewById(R.id.lbl_item_sub_title);
             thumbnail = (ImageView) itemView.findViewById(R.id.coverImageView);
             thumbnail.setOnClickListener(this);
             likeImageView = (ImageView) itemView.findViewById(R.id.likeImageView);

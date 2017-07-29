@@ -211,8 +211,6 @@ public class SplashActivity extends AppCompatActivity implements EasyPermissions
         protected void onPostExecute(Location location) {
             super.onPostExecute(location);
 
-            //putting the same current location in pref location every time on start up.
-
             String locationString = currentLocation.getLatitude() + ", " + currentLocation.getLongitude();
             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(activity);
             if(sharedPreferences.getString(getString(R.string.pref_location), null) == null){
@@ -220,8 +218,6 @@ public class SplashActivity extends AppCompatActivity implements EasyPermissions
                 editor.putString(getString(R.string.pref_location),locationString);
                 editor.commit();
             }
-
-
 
             Intent i = new Intent(activity, MainActivity.class);
             i.putExtra(EXTRA_CURRENT_LOCATION ,locationString);

@@ -1,4 +1,4 @@
-package com.kevguev.mobile.vidly;
+package com.kevguev.mobile.vidly.listeners;
 
 import com.google.api.services.youtube.model.Video;
 

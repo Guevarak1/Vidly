@@ -1,4 +1,4 @@
-package com.kevguev.mobile.vidly;
+package com.kevguev.mobile.vidly.behaviors;
 
 import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;

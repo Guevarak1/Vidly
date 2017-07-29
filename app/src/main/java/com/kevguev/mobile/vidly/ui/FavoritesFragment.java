@@ -1,11 +1,9 @@
 package com.kevguev.mobile.vidly.ui;
 
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -14,14 +12,13 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import com.kevguev.mobile.vidly.Constants;
-import com.kevguev.mobile.vidly.ItemClickCallback;
+import com.kevguev.mobile.vidly.adapters.CardViewAdapter;
+import com.kevguev.mobile.vidly.listeners.ItemClickCallback;
 import com.kevguev.mobile.vidly.R;
-import com.kevguev.mobile.vidly.SharedPreferenceUtil;
-import com.kevguev.mobile.vidly.adapter.FavoritesAdapter;
+import com.kevguev.mobile.vidly.utils.SharedPreferenceUtil;
 import com.kevguev.mobile.vidly.model.ListItem;
 
 import java.util.ArrayList;
-import java.util.List;
 
 
 /**
@@ -31,28 +28,17 @@ import java.util.List;
 public class FavoritesFragment extends Fragment
         implements ItemClickCallback{
 
-    private FavoritesAdapter adapter;
-    private LayoutInflater inflater;
+    private CardViewAdapter adapter;
     private RecyclerView recycler;
     ArrayList<ListItem> favorites;
-
     SharedPreferenceUtil sharedPreferenceUtil;
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_favorites, container, false);
         recycler = (RecyclerView) view.findViewById(R.id.fav_rec_list);
-        // Inflate the layout for this fragment
         setupRecycler();
-
-
         return view;
     }
 
@@ -72,39 +58,17 @@ public class FavoritesFragment extends Fragment
         if (favorites == null || favorites.isEmpty()) {
             Toast.makeText(getActivity(),"No favorites saved", Toast.LENGTH_SHORT).show();
         } else {
-            // create an empty adapter and add it to the recycler view
-            adapter = new FavoritesAdapter(getContext());
+            adapter = new CardViewAdapter(getContext(),true);
             recycler.setAdapter(adapter);
             adapter.setItemClickCallback(this);
             adapter.setListData(favorites);
             adapter.notifyDataSetChanged();
         }
     }
-    public void showAlert(String title, String message) {
-        if (getActivity() != null && !getActivity().isFinishing()) {
-            AlertDialog alertDialog = new AlertDialog.Builder(getActivity())
-                    .create();
-            alertDialog.setTitle(title);
-            alertDialog.setMessage(message);
-            alertDialog.setCancelable(false);
-
-            // setting OK Button
-            alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "OK",
-                    new DialogInterface.OnClickListener() {
-
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                            // activity.finish();
-                            getFragmentManager().popBackStackImmediate();
-                        }
-                    });
-            alertDialog.show();
-        }
-    }
 
     @Override
     public void onThumbnailClicked(int p) {
-        ListItem item = (ListItem) favorites.get(p);
+        ListItem item = favorites.get(p);
         Intent i = new Intent(getActivity(), DetailActivity.class);
         i.putExtra(Constants.BUNDLE_EXTRAS, item);
         startActivity(i);
@@ -113,7 +77,7 @@ public class FavoritesFragment extends Fragment
 
     @Override
     public void onLikeImageClicked(View v, int p) {
-        ListItem item = (ListItem) favorites.get(p);
+        ListItem item = favorites.get(p);
         if (item.isFavorite()) {
             item.setFavorite(false);
             sharedPreferenceUtil.removeFavorite(getActivity(),item);
@@ -127,7 +91,7 @@ public class FavoritesFragment extends Fragment
 
     @Override
     public void onShareImageClicked(int p) {
-        ListItem item = (ListItem) favorites.get(p);
+        ListItem item = favorites.get(p);
         String videoUrlId = item.getVideoUrlId();
 
         Intent sendIntent = new Intent();
