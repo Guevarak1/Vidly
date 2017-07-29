@@ -3,6 +3,7 @@ package com.kevguev.mobile.vidly.ui;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -34,6 +35,7 @@ public class MainListFragment extends Fragment
     public ArrayList listData;
     public ArrayList<Item> videoItems;
     SharedPreferenceUtil sharedPreferenceUtil;
+    FloatingActionButton fab;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -54,11 +56,35 @@ public class MainListFragment extends Fragment
         mProgress = new ProgressDialog(getActivity());
         mProgress.setMessage("Calling YouTube Data API ...");
         recView = (RecyclerView) view.findViewById(R.id.rec_list);
+        fab = (FloatingActionButton) getActivity().findViewById(R.id.fab);
+        fab.show();
+
         //layout manager: girdlayout manager or staggered grid layout manager
         recView.setLayoutManager(new LinearLayoutManager(getActivity()));
         adapter = new CardViewAdapter(getActivity(), false);
         adapter.setItemClickCallback(this);
         recView.setAdapter(adapter);
+
+        recView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+
+                if (dy >0) {
+                    // Scroll Down
+                    if (fab.isShown()) {
+                        fab.hide();
+                    }
+                }
+                else if (dy <0) {
+                    // Scroll Up
+                    if (!fab.isShown()) {
+                        fab.show();
+                    }
+                }
+            }
+        });
 
         MainActivity mainActivity = (MainActivity) getActivity();
         mainActivity.setPostResultsListener(this);

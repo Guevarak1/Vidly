@@ -12,6 +12,7 @@ import android.support.design.widget.BottomNavigationView.OnNavigationItemSelect
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.Toolbar;
@@ -21,12 +22,15 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.afollestad.materialdialogs.MaterialDialog;
+import com.aurelhubert.ahbottomnavigation.AHBottomNavigation;
+import com.aurelhubert.ahbottomnavigation.AHBottomNavigationAdapter;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.google.api.client.repackaged.com.google.common.base.Joiner;
 import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.youtube.YouTubeScopes;
+import com.kevguev.mobile.vidly.behaviors.BottomNavigationViewBehavior;
 import com.kevguev.mobile.vidly.utils.AppUtils;
 import com.kevguev.mobile.vidly.Constants;
 import com.kevguev.mobile.vidly.listeners.PostResultsListener;
@@ -80,7 +84,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
     protected static final String TAG = MainActivity.class.getSimpleName();
     private Toolbar toolbar;
-    private RichBottomNavigationView bottomNavigationView;
+    private AHBottomNavigation bottomNavigationView;
     private ProgressDialog mProgress;
     private FloatingActionButton mFab;
     private String currentLocation;
@@ -123,34 +127,34 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             currentLocation = i.getStringExtra(EXTRA_CURRENT_LOCATION);
         }
 
-        bottomNavigationView = (RichBottomNavigationView) findViewById(R.id.navigation);
-        bottomNavigationView.setOnNavigationItemSelectedListener(new OnNavigationItemSelectedListener() {
+        bottomNavigationView = (AHBottomNavigation) findViewById(R.id.bottom_navigation);
+        AHBottomNavigationAdapter navigationAdapter = new AHBottomNavigationAdapter(this, R.menu.bottom_nav_menu);
+        navigationAdapter.setupWithBottomNavigation(bottomNavigationView);
+
+        bottomNavigationView.setDefaultBackgroundColor(ContextCompat.getColor(this,R.color.colorPrimary));
+        bottomNavigationView.setAccentColor(ContextCompat.getColor(this,R.color.textColorPrimary));
+        bottomNavigationView.setBehaviorTranslationEnabled(true);
+
+        bottomNavigationView.setOnTabSelectedListener(new AHBottomNavigation.OnTabSelectedListener() {
             @Override
-            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-                switch (item.getItemId()) {
-                    case R.id.action_item1:
+            public boolean onTabSelected(int position, boolean wasSelected) {
+                switch (position){
+                    case 0:
                         switchFragment(0,TAG_FRAGMENT_MAIN_LIST);
                         return true;
-                    case R.id.action_item2:
+                    case 1:
                         switchFragment(1,TAG_FRAGMENT_MAP);
                         return true;
-                    case R.id.action_item3:
+                    case 2:
                         switchFragment(2,TAG_FRAGMENT_FAVORITES);
                         return true;
                 }
                 return false;
-
             }
         });
 
-        CoordinatorLayout.LayoutParams layoutParamsBottonNav = (CoordinatorLayout.LayoutParams) bottomNavigationView.getLayoutParams();
-        //layoutParamsBottonNav.setBehavior(new BottomNavigationViewBehavior());
-
-        CoordinatorLayout.LayoutParams layoutParamsfab= (CoordinatorLayout.LayoutParams) mFab.getLayoutParams();
-        layoutParamsfab.setBehavior(new ScrollAnimationFab());
-
         buildFragmentsList();
-        switchFragment(0,TAG_FRAGMENT_MAIN_LIST);
+        bottomNavigationView.setCurrentItem(0);
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         String prefLocation = prefs.getString(getString(R.string.pref_location), null);

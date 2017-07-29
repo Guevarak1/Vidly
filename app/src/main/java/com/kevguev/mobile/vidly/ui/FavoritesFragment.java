@@ -3,6 +3,7 @@ package com.kevguev.mobile.vidly.ui;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -11,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import com.aurelhubert.ahbottomnavigation.AHBottomNavigation;
 import com.kevguev.mobile.vidly.Constants;
 import com.kevguev.mobile.vidly.adapters.CardViewAdapter;
 import com.kevguev.mobile.vidly.listeners.ItemClickCallback;
@@ -32,12 +34,17 @@ public class FavoritesFragment extends Fragment
     private RecyclerView recycler;
     ArrayList<ListItem> favorites;
     SharedPreferenceUtil sharedPreferenceUtil;
+    private FloatingActionButton fab;
+    private AHBottomNavigation bottomNavigation;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_favorites, container, false);
         recycler = (RecyclerView) view.findViewById(R.id.fav_rec_list);
+        fab = (FloatingActionButton) getActivity().findViewById(R.id.fab);
+        fab.hide();
+        bottomNavigation = (AHBottomNavigation) getActivity().findViewById(R.id.bottom_navigation);
         setupRecycler();
         return view;
     }
@@ -60,6 +67,7 @@ public class FavoritesFragment extends Fragment
         } else {
             adapter = new CardViewAdapter(getContext(),true);
             recycler.setAdapter(adapter);
+
             adapter.setItemClickCallback(this);
             adapter.setListData(favorites);
             adapter.notifyDataSetChanged();
