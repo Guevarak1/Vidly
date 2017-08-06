@@ -22,7 +22,7 @@ public class Constants {
     public static final int NUMBER_OF_VIDEOS_RETURNED = 25;
     public static final int SETTINGS_RESULT = 555;
     public static final String BASE_URL = "https://www.googleapis.com/youtube/v3/";
-    public static final String API_KEY = "AIzaSyCm0Kx6byqy64NO1f5XDAOoRr7jD9EZCyM";
+    public static final String API_KEY = BuildConfig.API_KEY;
     public static final String TAG_FRAGMENT_MAIN_LIST= "tag_frag_main_list";
     public static final String TAG_FRAGMENT_MAP= "tag_frag_map";
     public static final String TAG_FRAGMENT_FAVORITES= "tag_frag_favorites";

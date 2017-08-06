@@ -84,7 +84,7 @@ public class MapLocationsFragment extends Fragment implements PostResultsListene
                 googleMap = mMap;
 
                 // For showing a move to my location button
-                //googleMap.setMyLocationEnabled(true);
+                googleMap.setMyLocationEnabled(true);
 
                 // For dropping a marker at a point on the Map
                 LatLng currentLocation = parseLocationString(lastLocation);
@@ -171,15 +171,13 @@ public class MapLocationsFragment extends Fragment implements PostResultsListene
                                 .defaultMarker(BitmapDescriptorFactory.HUE_CYAN)))
                         .setTag(item);
 
-                googleMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+                googleMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
                     @Override
-                    public boolean onMarkerClick(Marker marker) {
-
+                    public void onInfoWindowClick(Marker marker) {
                         ListItem item = (ListItem) marker.getTag();
                         Intent i = new Intent(getActivity(), DetailActivity.class);
                         i.putExtra(Constants.BUNDLE_EXTRAS, item);
                         startActivity(i);
-                        return false;
                     }
                 });
             }
